@@ -1,0 +1,5 @@
+@model List<JsonElement>
+@{ ViewData["Title"] = "Stations"; }
+<header class="page-header"><div><span class="eyebrow">NETWORK VISIBILITY</span><h1>Scooter stations</h1><p>Availability, trends and risk across your fleet.</p></div></header>
+<form method="get" class="filters"><label>Find a station<input name="search" value="@ViewBag.Search" placeholder="Station name or ID" /></label><label>Status<select name="status"><option value="">All statuses</option>@foreach(var status in new[]{"HEALTHY","WARNING","CRITICAL"}) { <option value="@status" selected="@(ViewBag.Status == status)">@ViewText.Label(status)</option> }</select></label><button type="submit">Apply filters</button><a asp-action="Stations">Reset</a></form>
+<section class="panel"><div class="section-heading"><h2>@Model.Count stations</h2><span class="muted">Sorted by operational risk</span></div><partial name="_StationTable" model="Model" /></section>

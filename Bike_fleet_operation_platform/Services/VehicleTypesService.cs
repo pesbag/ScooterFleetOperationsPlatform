@@ -1,4 +1,4 @@
-﻿using Bike_fleet_operation_platform.Dtos;
+using Bike_fleet_operation_platform.Dtos;
 using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -48,8 +48,8 @@ public class VehicleTypesService
                 _logger.LogError("\"error in deserialize vehicle types\"");
                 Console.WriteLine("\"error in deserialize vehicle types\"");
             }
-            Console.WriteLine($"succesfully recived {vehicleTypes.Length} vehicle types information");
-            var sendTasks = vehicleTypes.Select(content =>
+            Console.WriteLine($"succesfully recived {(vehicleTypes?.Length ?? 0)} vehicle types information");
+            var sendTasks = (vehicleTypes ?? []).Select(content =>
             {
                 var message = new Message<string, string>
                 {
@@ -61,7 +61,7 @@ public class VehicleTypesService
             });
             await Task.WhenAll(sendTasks);
             _kafkaProducer.Flush(TimeSpan.FromSeconds(10));
-            return vehicleTypes;
+            return vehicleTypes ?? [];
         }
         catch(Exception ex)
         {

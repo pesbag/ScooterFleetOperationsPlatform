@@ -2,7 +2,7 @@
 
 namespace Bike_fleet_operation_platform.Services;
 
-public class KafkaProducerServices
+public class KafkaProducerServices : IDisposable
 {
     private readonly string _bootstrapServices;
     private readonly IProducer<string, string> _producer;
@@ -29,6 +29,8 @@ public class KafkaProducerServices
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"kafka Error for station {content.Key}: {ex.Error.Reason}");
             Console.ResetColor();
+            throw;
         }
     }
+    public void Dispose() { _producer.Flush(TimeSpan.FromSeconds(5)); _producer.Dispose(); }
 }

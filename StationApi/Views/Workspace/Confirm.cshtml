@@ -1,0 +1,6 @@
+@{ ViewData["Title"] = "Confirm action"; }
+<header class="page-header"><div><span class="eyebrow">REVIEW YOUR ACTION</span><h1>Confirm status change</h1></div></header>
+<section class="panel padded narrow"><h2>@ViewBag.Kind #@ViewBag.Id</h2><p>Change this record to <strong>@ViewText.Label((string)ViewBag.TargetStatus)</strong>?</p>
+@if(ViewBag.TargetStatus == "COMPLETED") { <div class="notice">Only confirm after the physical move has been completed. This records your work; station counts continue to come from incoming readings.</div> }
+@if(ViewBag.Kind == "user" && ViewBag.TargetStatus == "DISABLED") { <div class="notice warning">The user will lose access, including existing sessions.</div> }
+<form asp-action="Apply" method="post"><input type="hidden" name="kind" value="@ViewBag.Kind" /><input type="hidden" name="id" value="@ViewBag.Id" /><input type="hidden" name="status" value="@ViewBag.TargetStatus" /><div class="actions"><button>Confirm change</button><a asp-action="@(ViewBag.Kind == "user" ? "Users" : ViewBag.Kind == "alert" ? "Alerts" : "Recommendations")">Cancel</a></div></form></section>

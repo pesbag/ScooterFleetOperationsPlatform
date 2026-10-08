@@ -1,3 +1,7 @@
 .vs/
 bin/
 obj/
+.env
+*.local.json
+artifacts/
+.vscode/*.log

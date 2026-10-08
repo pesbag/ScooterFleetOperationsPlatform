@@ -1,0 +1,17 @@
+@model IEnumerable<JsonElement>
+<div class="table-scroll"><table>
+<thead><tr><th>Station</th><th>Availability</th><th>Utilization</th><th>Risk</th><th>Net trend / hour</th><th>Status</th><th></th></tr></thead>
+<tbody>
+@foreach (var row in Model)
+{
+    var station = row.GetProperty("station");
+    <tr><td><a class="station-name" asp-action="Station" asp-route-id="@station.Text("id")">@station.Text("name")</a><small>@station.Text("id")</small></td>
+    <td><strong>@station.Text("count")</strong> <span class="muted">/ @station.Text("capacity") scooters</span></td>
+    <td><meter min="0" max="100" value="@row.Text("utilization")">@row.Text("utilization")%</meter><small>@row.Text("utilization")% occupied</small></td>
+    <td><strong>@row.Text("riskScore")</strong><small>@ViewText.Label(row.Text("riskLevel")) risk</small></td>
+    <td>@row.Text("ratePerHour")<small>@(row.Text("stale") == "True" ? "Outdated data" : "scooters / hour")</small></td>
+    <td><span class="badge @row.Text("status").ToLowerInvariant()">@ViewText.Label(row.Text("status"))</span></td>
+    <td><a asp-action="Station" asp-route-id="@station.Text("id")" aria-label="View @station.Text("name")">↗</a></td></tr>
+}
+</tbody></table></div>
+@if (!Model.Any()) { <div class="empty">No stations match this view. Data may still be arriving; refresh shortly.</div> }

@@ -1,0 +1,19 @@
+@model IEnumerable<JsonElement>
+@foreach (var item in Model)
+{
+    <article class="recommendation">
+        <div class="card-top"><span class="badge @item.Text("priority").ToLowerInvariant()">@ViewText.Label(item.Text("priority")) priority</span><span class="muted">#@item.Text("id") · @ViewText.Label(item.Text("status"))</span></div>
+        <h3>Move @item.Text("quantity") scooters</h3>
+        <div class="route"><strong>@item.Text("sourceStationId")</strong><span>⟶</span><strong>@item.Text("destinationStationId")</strong></div>
+        <p>@item.Text("reason")</p><small>Created @item.Time("createdAt")</small>
+        @if (item.Text("status") is "PENDING" or "IN_PROGRESS")
+        {
+            <div class="actions">
+                @if (item.Text("status") == "PENDING") { <a class="button secondary" asp-action="Confirm" asp-route-kind="recommendation" asp-route-id="@item.Text("id")" asp-route-status="IN_PROGRESS">Start task</a> }
+                <a class="button" asp-action="Confirm" asp-route-kind="recommendation" asp-route-id="@item.Text("id")" asp-route-status="COMPLETED">Mark completed</a>
+                <a class="text-link" asp-action="Confirm" asp-route-kind="recommendation" asp-route-id="@item.Text("id")" asp-route-status="DISMISSED">Dismiss</a>
+            </div>
+        }
+    </article>
+}
+@if (!Model.Any()) { <div class="empty">No rebalancing tasks in this view. New recommendations appear when fresh data indicates an actionable imbalance.</div> }

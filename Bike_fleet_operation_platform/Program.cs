@@ -26,7 +26,7 @@ builder.Services.AddHttpClient(
     httpClientName,
     client =>
     {
-        client.BaseAddress = new Uri("https://gbfs.lyft.com/gbfs/2.3/bkn/en/");
+        client.BaseAddress = new Uri(builder.Configuration["DataSource:BaseUrl"] ?? "https://gbfs.lyft.com/gbfs/2.3/bkn/en/");
         client.DefaultRequestHeaders.UserAgent.ParseAdd("dotnet-docs");
     });
 
@@ -35,17 +35,10 @@ builder.Services.AddTransient<StationInformationService>();
 builder.Services.AddTransient<StationStatusService>();
 builder.Services.AddTransient<VehicleTypesService>();
 
-builder.Services.AddHostedService<StationsPollingWorker>();
+bool demo = string.Equals(builder.Configuration["DataSource:Mode"], "Demo", StringComparison.OrdinalIgnoreCase);
+if (demo) builder.Services.AddHostedService<DemoFleetWorker>();
+else builder.Services.AddHostedService<StationsPollingWorker>();
 
 using IHost host = builder.Build();
-
-var informationService = host.Services.GetRequiredService<StationInformationService>();
-await informationService.GetStationsInformationAsync(stationsInformationTopic);
-
-var vehicleTypeService = host.Services.GetRequiredService<VehicleTypesService>();
-await vehicleTypeService.GetVehicleTypesDtoAsync(vehicleTypeTopic);
-
-var statusService = host.Services.GetRequiredService<StationStatusService>();
-await statusService.GetStationsStatusAsync(stationStatusTopic);
 
 await host.RunAsync();

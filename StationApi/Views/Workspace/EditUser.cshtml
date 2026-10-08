@@ -1,0 +1,14 @@
+@model JsonElement
+@{ bool editing = Model.Number("id") > 0; ViewData["Title"] = editing ? "Edit user" : "Add user"; }
+<a class="back-link" asp-action="Users">← Team management</a><header class="page-header"><div><span class="eyebrow">TEAM ACCESS</span><h1>@ViewData["Title"]</h1></div></header>
+<section class="panel padded narrow">
+@if(ViewBag.Error is string error) { <div class="notice danger" role="alert">@error</div> }
+<form asp-action="SaveUser" method="post" class="stack">
+@if(editing) { <input type="hidden" name="id" value="@Model.Text("id")" /> }
+<label>Full name<input name="name" value="@(Model.ValueKind == JsonValueKind.Object ? Model.Text("name") : "")" minlength="2" maxlength="100" required /></label>
+<label>Email address<input type="email" name="email" value="@(Model.ValueKind == JsonValueKind.Object ? Model.Text("email") : "")" maxlength="160" required /></label>
+<label>Role<select name="role"><option selected="@(Model.Text("role") != "ADMIN")">OPERATOR</option><option selected="@(Model.Text("role") == "ADMIN")">ADMIN</option></select></label>
+<label>@(editing ? "New password (leave blank to keep current password)" : "Initial password")<input type="password" name="password" minlength="10" maxlength="128" autocomplete="new-password" required="@(!editing)" /></label>
+<label class="checkbox"><input type="checkbox" name="enabled" value="true" checked="@(!editing || Model.Text("enabled") == "True")" /> Account enabled</label>
+<div class="actions"><button type="submit">Save user</button><a asp-action="Users">Cancel</a></div>
+</form></section>

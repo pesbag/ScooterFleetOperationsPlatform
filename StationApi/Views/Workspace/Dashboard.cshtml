@@ -1,0 +1,18 @@
+@model JsonElement
+@{ ViewData["Title"] = "Overview"; var stations = Model.GetProperty("stations").EnumerateArray().ToList(); var moves = Model.GetProperty("recommendations").EnumerateArray().Take(2); }
+<header class="page-header"><div><span class="eyebrow">YOUR FLEET AT A GLANCE</span><h1>Operations overview</h1><p>See what needs attention. Make the next move count.</p></div><a class="button secondary" asp-action="Dashboard">↻ Refresh overview</a></header>
+<div class="context-bar"><span><span class="live-dot"></span>Updated @Model.Time("updatedAt")</span><span class="badge neutral">@Model.Text("dataMode") data</span></div>
+@if (Model.Text("dataMode") == "Demo") { <div class="notice">Demonstration fleet: synthetic scooter readings travel through the full Kafka processing pipeline.</div> }
+@if (Model.Number("stale") > 0) { <div class="notice warning">@Model.Text("stale") stations have missing or outdated data. Predictions and new moves are withheld for those stations.</div> }
+<div class="metrics">
+    @foreach (var item in new[] { ("Total scooters", "totalScooters", "Across your network"), ("Healthy stations", "healthy", "Balanced and ready"), ("Warning stations", "warning", "Watch closely"), ("Critical stations", "critical", "Needs attention") })
+    { <article class="metric @item.Item2"><span>@item.Item1</span><strong>@Model.Text(item.Item2)</strong><small>@item.Item3</small></article> }
+</div>
+<div class="mini-metrics"><span><strong>@Model.Text("availableCapacity")</strong> available spaces</span><span><strong>@Model.Text("activeAlerts")</strong> active alerts</span><span><strong>@Model.Text("pendingRecommendations")</strong> open tasks</span></div>
+<section class="panel"><div class="section-heading"><div><span class="eyebrow">STATION HEALTH</span><h2>Priority watchlist</h2></div><a asp-action="Stations">View all stations →</a></div><partial name="_StationTable" model="stations.Take(6)" /></section>
+<div class="two-column"><section><div class="section-heading"><h2>Recommended moves</h2><a asp-action="Recommendations">All tasks →</a></div><partial name="_Recommendations" model="moves" /></section>
+<section><div class="section-heading"><h2>Active alerts</h2><a asp-action="Alerts">All alerts →</a></div>
+@foreach (var alert in Model.GetProperty("alerts").EnumerateArray()) { <article class="alert-card"><span class="badge @alert.Text("severity").ToLowerInvariant()">@ViewText.Label(alert.Text("severity"))</span><h3>@alert.Text("title")</h3><p>@alert.Text("description")</p><a asp-action="Station" asp-route-id="@alert.Text("stationId")">View station →</a></article> }
+@if (Model.GetProperty("alerts").GetArrayLength() == 0) { <div class="empty">No active alerts. The next analysis runs within 30 seconds.</div> }
+</section></div>
+

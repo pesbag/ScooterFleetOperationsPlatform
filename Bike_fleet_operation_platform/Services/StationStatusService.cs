@@ -1,4 +1,4 @@
-﻿using Bike_fleet_operation_platform.Dtos;
+using Bike_fleet_operation_platform.Dtos;
 using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -50,9 +50,9 @@ public class StationStatusService
                 _logger.LogError("error in deserialize stations status");
                 Console.WriteLine("error in deserialize stations status");
             }
-            Console.WriteLine($"succesfully recived {stationsStatus.Length} stations status");
+            Console.WriteLine($"succesfully recived {(stationsStatus?.Length ?? 0)} stations status");
             var validStations = new List<StationStatusDto>();
-            foreach(var station in stationsStatus)
+            foreach(var station in stationsStatus ?? [])
             {
                 var validationContext = new ValidationContext(station);
                 var validationResults = new List<ValidationResult>();
@@ -81,7 +81,7 @@ public class StationStatusService
             });
             await Task.WhenAll(sendTasks);
             _kafkaProducer.Flush(TimeSpan.FromSeconds(10));
-            return stationsStatus;
+            return stationsStatus ?? [];
 
         }
         catch (Exception ex)

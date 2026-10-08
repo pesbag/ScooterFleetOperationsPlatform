@@ -1,0 +1,6 @@
+@model JsonElement
+@{ ViewData["Title"] = "Team management"; }
+<header class="page-header"><div><span class="eyebrow">ADMINISTRATION</span><h1>Your operations team</h1><p>Manage access and responsibilities.</p></div><a class="button" asp-action="EditUser">+ Add user</a></header>
+<section class="panel table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>
+@foreach(var user in Model.EnumerateArray()) { <tr><td><strong>@user.Text("name")</strong></td><td>@user.Text("email")</td><td><span class="badge neutral">@user.Text("role")</span></td><td><span class="badge @(user.Text("enabled") == "True" ? "healthy" : "warning")">@(user.Text("enabled") == "True" ? "Enabled" : "Disabled")</span></td><td>@user.Time("createdAt")</td><td><a asp-action="EditUser" asp-route-id="@user.Text("id")">Edit</a> · <a asp-action="Confirm" asp-route-kind="user" asp-route-id="@user.Text("id")" asp-route-status="@(user.Text("enabled") == "True" ? "DISABLED" : "ENABLED")">@(user.Text("enabled") == "True" ? "Disable" : "Enable")</a></td></tr> }
+</tbody></table></section><p class="muted">Accounts are disabled instead of deleted to preserve task history.</p>

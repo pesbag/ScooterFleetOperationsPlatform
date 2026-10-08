@@ -1,0 +1,4 @@
+@model JsonElement
+@{ ViewData["Title"] = "My profile"; }
+<header class="page-header"><div><span class="eyebrow">YOUR WORKSPACE ACCOUNT</span><h1>My profile</h1></div></header>
+<section class="panel padded narrow"><h2>@Model.Text("name")</h2><dl><dt>Email</dt><dd>@Model.Text("email")</dd><dt>Role</dt><dd>@Model.Text("role")</dd><dt>Member since</dt><dd>@Model.Time("createdAt")</dd></dl><p class="muted">Contact an administrator to update your account details.</p></section>

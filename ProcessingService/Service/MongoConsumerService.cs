@@ -1,186 +1,88 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using ProcessingService.DataDbContext;
-using ProcessingService.Dtos;
 using StackExchange.Redis;
-using System;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+using ProcessingService.Dtos;
 
 namespace ProcessingService.Service;
 
 public class MongoConsumerService : BackgroundService
 {
-    private readonly ConsumerConfig _consumerConfig;
-    private readonly IMongoCollection<BsonDocument> _collection;
-    private readonly IDatabase _redisDb;
+    private readonly ConsumerConfig _config;
+    private readonly IMongoCollection<BsonDocument> _latest;
+    private readonly IMongoCollection<BsonDocument> _history;
+    private readonly IDatabase _redis;
     private readonly string _topic;
     private readonly ILogger<MongoConsumerService> _logger;
-    private readonly JsonSerializerOptions _jsonOptions;
-    private readonly IServiceScopeFactory _scopeFactory;
-
-    public MongoConsumerService(
-        ConsumerConfig consumerConfig,
-        IMongoDatabase database,
-        IConnectionMultiplexer redisMultiplexer,
-        IConfiguration configuration,
-        IServiceScopeFactory scopeFactory,
-        ILogger<MongoConsumerService> logger)
+    public MongoConsumerService(ConsumerConfig config, IMongoDatabase database, IConnectionMultiplexer redis,
+        IConfiguration configuration, ILogger<MongoConsumerService> logger)
     {
-        _consumerConfig = new ConsumerConfig(consumerConfig)
-        {
-            GroupId = "stations_status_mongo_group"
-        };
-        _collection = database.GetCollection<BsonDocument>("StationsStatus");
-        _redisDb = redisMultiplexer.GetDatabase();
-        _topic = configuration["Kafka:Topics:StationStatus"]
-            ?? throw new InvalidOperationException("Missing Kafka:Topics:StationStatus in configuration");
-        _logger = logger;
-        _scopeFactory = scopeFactory;
-        _jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        _config = new ConsumerConfig(config) { GroupId = "stations_status_mongo_group", EnableAutoCommit = false, EnableAutoOffsetStore = false };
+        _latest = database.GetCollection<BsonDocument>("StationsStatus");
+        _history = database.GetCollection<BsonDocument>("StationHistory");
+        _redis = redis.GetDatabase(); _topic = configuration["Kafka:Topics:StationStatus"]!; _logger = logger;
     }
-
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken token)
     {
-        _logger.LogInformation("MongoConsumerService started, listening to topic: {Topic}", _topic);
-
-        await Task.Run(async () =>
+        await Task.Yield();
+        await _history.Indexes.CreateManyAsync([
+            new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("StationId").Ascending("RecordedAt")),
+            new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("RecordedAt"),
+                new CreateIndexOptions { ExpireAfter = TimeSpan.FromDays(7) })], token);
+        using var consumer = new ConsumerBuilder<string, string>(_config).Build();
+        consumer.Subscribe(_topic);
+        try
         {
-            using var consumer = new ConsumerBuilder<string, string>(_consumerConfig).Build();
-            consumer.Subscribe(_topic);
-
-            try
+            while (!token.IsCancellationRequested)
             {
-                while (!stoppingToken.IsCancellationRequested)
+                ConsumeResult<string, string>? message = null;
+                try
                 {
-                    ConsumeResult<string, string>? consumeResult = null;
-
-                    try
+                    message = consumer.Consume(token);
+                    var document = BsonDocument.Parse(message.Message.Value);
+                    if (document.TryGetValue("num_docks_available", out var docks)) { document["Num_docs_available"] = docks; document.Remove("num_docks_available"); }
+                    if (document.TryGetValue("num_vehicles_available", out var vehicles)) { document["Nun_vehicles_available"] = vehicles; document.Remove("num_vehicles_available"); }
+                    var state = JsonSerializer.Deserialize<StationStatusDto>(document.ToJson(),
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (state is null || string.IsNullOrWhiteSpace(state.Station_id) || state.Last_reported <= 0
+                        || state.Last_reported >= 253402300800 || state.Num_bikes_available < 0 || state.Num_docs_available < 0)
+                        throw new JsonException("Invalid station status.");
+                    var at = DateTimeOffset.FromUnixTimeSeconds(state.Last_reported).UtcDateTime;
+                    var history = new BsonDocument { ["_id"] = $"{state.Station_id}:{state.Last_reported}",
+                        ["StationId"] = state.Station_id, ["RecordedAt"] = at, ["Count"] = state.Num_bikes_available };
+                    // Idempotent writes make replays safe when one write succeeds and another fails.
+                    await _history.ReplaceOneAsync(Builders<BsonDocument>.Filter.Eq("_id", history["_id"]), history,
+                        new ReplaceOptions { IsUpsert = true }, token);
+                    var filter = Builders<BsonDocument>.Filter.Eq("Station_id", state.Station_id);
+                    var previous = await _latest.Find(filter).FirstOrDefaultAsync(token);
+                    if (previous is null || previous.GetValue("Last_reported", 0L).ToInt64() <= state.Last_reported)
                     {
-                        consumeResult = consumer.Consume(stoppingToken);
+                        if (previous is not null && previous.Contains("_id")) document["_id"] = previous["_id"];
+                        await _latest.ReplaceOneAsync(filter, document, new ReplaceOptions { IsUpsert = true }, token);
+                        // Cache only after durable writes. Redis failure must not lose telemetry.
+                        try { await _redis.StringSetAsync($"stations:state:{state.Station_id}", message.Message.Value, TimeSpan.FromHours(2)); }
+                        catch (RedisException ex) { _logger.LogWarning(ex, "Redis cache unavailable."); }
                     }
-                    catch (OperationCanceledException) { break; }
-                    catch (ConsumeException ex)
-                    {
-                        _logger.LogError("Kafka consume error: {Reason}", ex.Error.Reason);
-                        continue;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(consumeResult?.Message?.Value))
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        string rawJson = consumeResult.Message.Value;
-                        var document = BsonDocument.Parse(rawJson);
-
-                        string stationId = string.Empty;
-                        var messageKey = consumeResult.Message.Key;
-                        if (!string.IsNullOrEmpty(messageKey))
-                        {
-                            stationId = messageKey;
-                        }
-                        else if (document.Contains("Station_id"))
-                        {
-                            stationId = document["Station_id"].ToString() ?? string.Empty;
-                        }
-                        else if (document.Contains("station_id"))
-                        {
-                            stationId = document["station_id"].ToString() ?? string.Empty;
-                        }
-
-                        if (string.IsNullOrEmpty(stationId))
-                        {
-                            consumer.Commit(consumeResult);
-                            continue;
-                        }
-
-                        var incomingState = JsonSerializer.Deserialize<StationStatusDto>(rawJson, _jsonOptions);
-                        if (incomingState == null)
-                        {
-                            consumer.Commit(consumeResult);
-                            continue;
-                        }
-
-                        string redisKey = $"stations:state:{stationId}";
-                        RedisValue cachedStateJson = await _redisDb.StringGetAsync(redisKey);
-
-                        StationStatusDto? cachedState = null;
-                        if (cachedStateJson.HasValue)
-                        {
-                            cachedState = JsonSerializer.Deserialize<StationStatusDto>(cachedStateJson.ToString(), _jsonOptions);
-                        }
-
-                        bool isNewOrChanged = cachedState == null || incomingState.HasChangedFrom(cachedState);
-
-                        if (isNewOrChanged)
-                        {
-                            string redisExistingKey = $"stations:exists:{stationId}";
-                            bool stationExists = await _redisDb.KeyExistsAsync(redisExistingKey);
-
-                            if (!stationExists)
-                            {
-                                using var scope = _scopeFactory.CreateScope();
-                                var dbContext = scope.ServiceProvider.GetRequiredService<StationDbContext>();
-                                stationExists = await dbContext.stationInformation.FindAsync(new object[] { stationId }, stoppingToken) != null;
-
-                                if (stationExists)
-                                {
-                                    await _redisDb.StringSetAsync(redisExistingKey, "1", TimeSpan.FromDays(7));
-                                }
-                            }
-
-                            if (!stationExists)
-                            {
-                                _logger.LogWarning("station {StationId} does not exist in system. skipping update", stationId);
-                                consumer.Commit(consumeResult);
-                                continue;
-                            }
-
-                            _logger.LogInformation("state changed or new station {StationId}. replacing in Mongo & Redis", stationId);
-
-                            string minimalStateJson = JsonSerializer.Serialize(incomingState);
-                            await _redisDb.StringSetAsync(redisKey, minimalStateJson);
-
-                            var filter = Builders<BsonDocument>.Filter.Or(
-                                Builders<BsonDocument>.Filter.Eq("Station_id", stationId),
-                                Builders<BsonDocument>.Filter.Eq("station_id", stationId)
-                            );
-                            var options = new ReplaceOptions { IsUpsert = true };
-
-                            await _collection.ReplaceOneAsync(filter, document, options, cancellationToken: stoppingToken);
-                        }
-                        else
-                        {
-                            _logger.LogDebug("No state change detected for station {stationId}. skipping DB write", stationId);
-                        }
-
-                        consumer.Commit(consumeResult);
-                    }
-                    catch (JsonException ex)
-                    {
-                        _logger.LogError("malformed json message: {error}", ex.Message);
-                        consumer.Commit(consumeResult);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError("error handling message: {error}", ex.Message);
-                    }
+                    consumer.Commit(message);
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { break; }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(ex, "Invalid message discarded at {Offset}.", message?.TopicPartitionOffset);
+                    if (message is not null) consumer.Commit(message);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Status processing failed; retrying the same message.");
+                    if (message is not null) consumer.Seek(message.TopicPartitionOffset);
+                    await Task.Delay(2000, token);
                 }
             }
-            finally
-            {
-                _logger.LogInformation("closing MongoConsumerService...");
-                consumer.Close();
-            }
-        }, stoppingToken);
+        }
+        finally { consumer.Close(); }
     }
 }

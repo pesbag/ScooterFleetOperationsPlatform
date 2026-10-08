@@ -4,6 +4,7 @@ using StationApi.Repository;
 namespace StationApi.Controllers;
 
 [ApiController]
+[Microsoft.AspNetCore.Authorization.Authorize]
 [Route("api/[controller]")]
 public class StationController : ControllerBase
 {

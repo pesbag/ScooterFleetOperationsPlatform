@@ -1,0 +1,5 @@
+@model JsonElement
+@{ ViewData["Title"] = "Rebalancing"; }
+<header class="page-header"><div><span class="eyebrow">TURN INSIGHT INTO ACTION</span><h1>Smart rebalancing</h1><p>Practical moves to keep your network balanced.</p></div></header>
+<form method="get" class="filters"><label>Task status<select name="status"><option value="">All tasks</option>@foreach(var s in new[]{"PENDING","IN_PROGRESS","COMPLETED","DISMISSED"}) { <option selected="@(ViewBag.Status == s)">@s</option> }</select></label><button>Apply filter</button></form>
+<div class="recommendation-grid"><partial name="_Recommendations" model="Model.EnumerateArray()" /></div>

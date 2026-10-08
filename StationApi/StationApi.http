@@ -1,6 +1,15 @@
 @StationApi_HostAddress = http://localhost:5138
 
-GET {{StationApi_HostAddress}}/weatherforecast/
+# Sign in through the Razor Views first, or use a cookie-aware HTTP client.
+# For writes: GET /api/auth/csrf, then send its token in X-CSRF-TOKEN
+# together with the antiforgery and session cookies.
+GET {{StationApi_HostAddress}}/health
 Accept: application/json
 
 ###
+GET {{StationApi_HostAddress}}/api/stations
+Accept: application/json
+
+###
+GET {{StationApi_HostAddress}}/api/dashboard
+Accept: application/json

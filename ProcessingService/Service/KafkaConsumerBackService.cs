@@ -1,73 +1,45 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ProcessingService.Handler;
-public class KafkaConsumerBackgroundService : BackgroundService
+using System.Text.Json;
+
+public class KafkaConsumerBackgroundService(IServiceScopeFactory scopes, IConfiguration config, ILogger<KafkaConsumerBackgroundService> logger) : BackgroundService
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ConsumerConfig _consumerConfig;
-    private readonly List<string> _topicsToSubscribe;
-    private readonly ILogger<KafkaConsumerBackgroundService> _logger;
-
-    public KafkaConsumerBackgroundService(IServiceProvider serviceProvider,
-        IConfiguration config,
-        ILogger<KafkaConsumerBackgroundService> logger)
+    protected override async Task ExecuteAsync(CancellationToken token)
     {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
-
-        _consumerConfig = new ConsumerConfig
-        {
-            BootstrapServers = config["Kafka:BootstrapService"],
-            GroupId = config["Kafka:GroupId"],
-            AutoOffsetReset = AutoOffsetReset.Earliest,
-            EnableAutoCommit = false
-        };
-
-        using var scope = _serviceProvider.CreateScope();
-        var handlers = scope.ServiceProvider.GetServices<IKafkaMessageHandler>();
-        _topicsToSubscribe = handlers.Select(h => h.Topic).Distinct().ToList();
-    }
-
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        _logger.LogInformation("enter to ExecuteAsync function");
         await Task.Yield();
-
-        using var consumer = new ConsumerBuilder<string, string>(_consumerConfig).Build();
-        consumer.Subscribe(_topicsToSubscribe);
-
+        using var initialScope = scopes.CreateScope();
+        var topics = initialScope.ServiceProvider.GetServices<IKafkaMessageHandler>().Select(x => x.Topic).Distinct().ToList();
+        using var consumer = new ConsumerBuilder<string, string>(new ConsumerConfig {
+            BootstrapServers = config["Kafka:BootstrapService"], GroupId = config["Kafka:GroupId"],
+            AutoOffsetReset = AutoOffsetReset.Earliest, EnableAutoCommit = false, EnableAutoOffsetStore = false }).Build();
+        consumer.Subscribe(topics);
         try
         {
-            while (!stoppingToken.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
             {
-                var result = consumer.Consume(stoppingToken);
-                if (result == null) continue;
-                using (var scope = _serviceProvider.CreateScope())
-                { 
-                    var handlers = scope.ServiceProvider.GetServices<IKafkaMessageHandler>();
-                    var matchedHandler = handlers.FirstOrDefault(h => h.Topic == result.Topic);
-
-                    if (matchedHandler != null)
-                    {
-                        bool isSuccess = await matchedHandler.HandleAsync(result.Message.Value);
-                        if (isSuccess)
-                        {
-                            consumer.Commit(result);
-                        }
-                    }
+                ConsumeResult<string, string>? message = null;
+                try
+                {
+                    message = consumer.Consume(token);
+                    using var scope = scopes.CreateScope();
+                    var handler = scope.ServiceProvider.GetServices<IKafkaMessageHandler>().First(x => x.Topic == message.Topic);
+                    if (!await handler.HandleAsync(message.Message.Value)) throw new JsonException("Invalid metadata.");
+                    consumer.Commit(message);
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { break; }
+                catch (JsonException ex) { logger.LogError(ex, "Invalid metadata discarded."); if (message is not null) consumer.Commit(message); }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Metadata processing failed; retrying the same message.");
+                    if (message is not null) consumer.Seek(message.TopicPartitionOffset);
+                    await Task.Delay(2000, token);
                 }
             }
         }
-        catch (OperationCanceledException ex)
-        {
-            _logger.LogError($"error: {ex.Message}");
-        }
-        finally
-        {
-            consumer.Close();
-        }
+        finally { consumer.Close(); }
     }
 }

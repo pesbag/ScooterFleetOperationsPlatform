@@ -28,15 +28,13 @@ public class StationRepository: IStationRepository
         }
         if (isRenting.HasValue)
         {
-            bool rentingBool = isRenting.Value == 1;
-            filter &= filterBuilder.Eq("Is_returning", rentingBool);
+            filter &= filterBuilder.Eq("Is_renting", isRenting.Value);
         }
         if (isReturning.HasValue)
         {
-            bool returningBool = isReturning.Value == 1;
-            filter &= filterBuilder.Eq("Is_renting", returningBool);
+            filter &= filterBuilder.Eq("Is_returning", isReturning.Value);
         }
-        var mongoDocs = await _collection.Find(filter).Limit(10).ToListAsync();
+        var mongoDocs = await _collection.Find(filter).ToListAsync();
 
         if (!mongoDocs.Any())
         {

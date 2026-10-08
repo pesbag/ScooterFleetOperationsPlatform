@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -14,8 +14,10 @@ public class StationStatusDto
     [Range(0,int.MaxValue)]
     public int Num_bikes_available { get; set; }
     [Range(0, int.MaxValue)]
+    [System.Text.Json.Serialization.JsonPropertyName("num_vehicles_available")]
     public int Nun_vehicles_available { get; set; }
     [Range(0, int.MaxValue)]
+    [System.Text.Json.Serialization.JsonPropertyName("num_docks_available")]
     public int Num_docs_available { get; set; }
     public int Is_renting { get; set; }
     public int Is_returning { get; set; }
