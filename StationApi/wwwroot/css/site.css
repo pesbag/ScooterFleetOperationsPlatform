@@ -2,3 +2,5 @@
 
 /* Readable identifiers and form validation on narrow screens. */
 small.muted{display:block;overflow-wrap:anywhere} .field-validation-error,.validation-summary-errors{color:#a62639} .validation-summary-valid{display:none} textarea{width:100%;min-height:120px} button:active{opacity:.7} @media(max-width:700px){.route{flex-wrap:wrap}.panel{overflow-x:auto}}
+
+.sidebar{overflow-y:auto}.sidebar .account{margin-top:24px}.account-actions{display:flex;justify-content:flex-end;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}.account-actions form{margin:0}.updated-task{border:2px solid var(--accent)}.task-status{color:var(--accent)}

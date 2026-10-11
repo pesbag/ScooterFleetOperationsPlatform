@@ -14,19 +14,15 @@ public class StationController : ControllerBase
         _repo = repo;
     }
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<GetFiletrDto>>> GetAllFilterdAsync([FromQuery] int? minAvailableBike, [FromQuery] int? inRenting, [FromQuery] int? isReturning)
+    public async Task<ActionResult<IEnumerable<GetFiletrDto>>> GetAllFilteredAsync([FromQuery] int? minAvailableBike, [FromQuery] int? inRenting, [FromQuery] int? isReturning)
     {
         var result = await _repo.GetStationAsync(minAvailableBike, inRenting, isReturning);
-        //if (!result.Any())
-        //{
-        //    return NotFound();
-        //}
         return Ok(result);
     }
     [HttpGet("{id}")]
     public async Task<ActionResult<AllDataDto>> GetByIdAsync(string id)
     {
-        var result = await _repo.GetAllDataByIdASync(id);
+        var result = await _repo.GetAllDataByIdAsync(id);
         if(result is null)
         {
             return NotFound();

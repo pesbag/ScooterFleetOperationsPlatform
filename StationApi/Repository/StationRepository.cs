@@ -84,7 +84,7 @@ public class StationRepository: IStationRepository
 
         return result;
     }
-    public async Task<AllDataDto?> GetAllDataByIdASync(string id)
+    public async Task<AllDataDto?> GetAllDataByIdAsync(string id)
     {
         if (!id.StartsWith(_prefix, StringComparison.Ordinal)) return null;
         var sqlResult = await _sqlContext

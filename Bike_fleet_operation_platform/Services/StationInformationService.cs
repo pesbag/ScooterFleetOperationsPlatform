@@ -3,22 +3,16 @@ using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
-using System.Configuration;
-using System.Linq;
-using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using static Confluent.Kafka.ConfigPropertyNames;
 
 namespace Bike_fleet_operation_platform.Services;
 
 public class StationInformationService
 {
     private readonly KafkaProducerServices _kafkaProducer;
-    private readonly IHttpClientFactory _httpClientFactory = null!;
-    private readonly IConfiguration _configuration = null!;
-    private readonly ILogger<StationInformationService> _logger = null!;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<StationInformationService> _logger;
 
     public StationInformationService(
         IHttpClientFactory httpClientFactory,
@@ -30,27 +24,20 @@ public class StationInformationService
 
     public async Task<StationInformationDto[]> GetStationsInformationAsync(string topic, CancellationToken token = default)
     {
-        // create the client
         string? httpClientName = _configuration["StationInformation"] ?? "LyftStationClient";
         HttpClient client = _httpClientFactory.CreateClient(httpClientName);
 
         try
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            using JsonDocument document = await GbfsHttp.GetJson(client, "station_information.json", _configuration.GetValue<int>("Http:MaxAttempts", 3), token);
+            using JsonDocument document = await GbfsHttp.GetJsonAsync(client, "station_information.json", _configuration.GetValue<int>("Http:MaxAttempts", 3), token);
 
-            StationInformationDto[] stationsInformation = GbfsJson.Stations(document.RootElement, null)
+            StationInformationDto[] stationsInformation = document.RootElement.GetProperty("data").GetProperty("stations").EnumerateArray()
                 .Select(x => x.Deserialize<StationInformationDto>(options)!).ToArray();
-            if (stationsInformation is null)
-            {
-                _logger.LogError("\"error in deserialize stations information\"");
-                Console.WriteLine("\"error in deserialize stations information\"");
-            }
-            Console.WriteLine($"succesfully recived {(stationsInformation?.Length ?? 0)} stations information");
 
             var validStations = new List<StationInformationDto>();
 
-            foreach (var station in stationsInformation ?? [])
+            foreach (var station in stationsInformation)
             {
                 if (string.IsNullOrWhiteSpace(station.Station_id)) { _logger.LogWarning("GBFS station without an ID was skipped."); continue; }
                 station.Station_id = _configuration["DataSource:StationPrefix"] + station.Station_id;
@@ -82,12 +69,11 @@ public class StationInformationService
 
             await Task.WhenAll(sendTasks);
             _kafkaProducer.Flush(TimeSpan.FromSeconds(10));
-            return stationsInformation ?? [];
+            return stationsInformation;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
-            Console.WriteLine($"the error: {ex.Message}");
             _logger.LogError("GBFS station information request failed: {Error}", ex);
         }
         throw new HttpRequestException("GBFS request failed. Existing source timestamps were left unchanged.");

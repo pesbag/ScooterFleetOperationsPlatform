@@ -4,7 +4,7 @@ namespace Bike_fleet_operation_platform.Services;
 
 public static class GbfsHttp
 {
-    public static async Task<JsonDocument> GetJson(HttpClient client, string path, int maxAttempts, CancellationToken token)
+    public static async Task<JsonDocument> GetJsonAsync(HttpClient client, string path, int maxAttempts, CancellationToken token)
     {
         if (maxAttempts is < 1 or > 3) throw new InvalidOperationException("Http:MaxAttempts must be between 1 and 3.");
         for (int attempt = 1; ; attempt++)

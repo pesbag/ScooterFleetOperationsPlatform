@@ -76,16 +76,14 @@ var processedDto = System.Text.Json.JsonSerializer.Deserialize<ProcessingService
 Check("Kafka JSON round trip retains missing count and receipt time", processedDto.Num_bikes_available is null && processedDto.ReceivedAt == now);
 var flags = System.Text.Json.JsonSerializer.Deserialize<Bike_fleet_operation_platform.Dtos.StationStatusDto>("{\"is_renting\":true,\"is_returning\":false}", jsonOptions)!;
 Check("GBFS boolean flags convert to existing Kafka integers", flags.Is_renting == 1 && flags.Is_returning == 0);
-using var mixed = System.Text.Json.JsonDocument.Parse("{\"data\":{\"stations\":[{\"provider_id\":\"fixture-provider\"},{\"provider_id\":\"other\"},{}]}}");
-Check("GBFS provider filter excludes other and unknown providers", Bike_fleet_operation_platform.Services.GbfsJson.Stations(mixed.RootElement, "fixture-provider").Count() == 1);
 if (args.Contains("--gbfs"))
 {
     using var http = new HttpClient { BaseAddress = new Uri("https://gbfs.lyft.com/gbfs/2.3/bkn/en/"), Timeout = TimeSpan.FromSeconds(25) };
-    using var infoFeed = await Bike_fleet_operation_platform.Services.GbfsHttp.GetJson(http, "station_information.json", 3, default);
-    using var statusFeed = await Bike_fleet_operation_platform.Services.GbfsHttp.GetJson(http, "station_status.json", 3, default);
-    var info = Bike_fleet_operation_platform.Services.GbfsJson.Stations(infoFeed.RootElement, null)
+    using var infoFeed = await Bike_fleet_operation_platform.Services.GbfsHttp.GetJsonAsync(http, "station_information.json", 3, default);
+    using var statusFeed = await Bike_fleet_operation_platform.Services.GbfsHttp.GetJsonAsync(http, "station_status.json", 3, default);
+    var info = infoFeed.RootElement.GetProperty("data").GetProperty("stations").EnumerateArray()
         .Select(x => System.Text.Json.JsonSerializer.Deserialize<Bike_fleet_operation_platform.Dtos.StationInformationDto>(x, jsonOptions)!).ToDictionary(x => x.Station_id);
-    var status = Bike_fleet_operation_platform.Services.GbfsJson.Stations(statusFeed.RootElement, null)
+    var status = statusFeed.RootElement.GetProperty("data").GetProperty("stations").EnumerateArray()
         .Select(x => System.Text.Json.JsonSerializer.Deserialize<Bike_fleet_operation_platform.Dtos.StationStatusDto>(x, jsonOptions)!).ToList();
     Check("Live GBFS source contains station metadata and status", info.Count > 0 && status.Count > 0);
     var analyses = status.Where(x => info.ContainsKey(x.Station_id)).Select(x => engine.Analyze(new StationInput(x.Station_id,

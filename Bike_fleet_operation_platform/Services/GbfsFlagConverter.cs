@@ -15,11 +15,3 @@ public class GbfsFlagConverter : JsonConverter<int?>
     public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
     { if (value.HasValue) writer.WriteNumberValue(value.Value); else writer.WriteNullValue(); }
 }
-
-public static class GbfsJson
-{
-    public static IEnumerable<JsonElement> Stations(JsonElement root, string? provider) =>
-        root.GetProperty("data").GetProperty("stations").EnumerateArray()
-            .Where(x => string.IsNullOrWhiteSpace(provider)
-                || (x.TryGetProperty("provider_id", out var id) && id.GetString() == provider));
-}

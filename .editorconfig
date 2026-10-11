@@ -1,0 +1,20 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+csharp_new_line_before_open_brace = all
+
+# Standard C# names: camelCase for parameters/locals, PascalCase for public members.
+dotnet_naming_rule.parameters_and_locals.severity = suggestion
+dotnet_naming_rule.parameters_and_locals.symbols = parameters_and_locals
+dotnet_naming_rule.parameters_and_locals.style = camel_case
+dotnet_naming_symbols.parameters_and_locals.applicable_kinds = parameter, local
+dotnet_naming_style.camel_case.capitalization = camel_case
+
+dotnet_naming_rule.types_and_members.severity = suggestion
+dotnet_naming_rule.types_and_members.symbols = types_and_members
+dotnet_naming_rule.types_and_members.style = pascal_case
+dotnet_naming_symbols.types_and_members.applicable_kinds = class, struct, enum, method, property, event
+dotnet_naming_style.pascal_case.capitalization = pascal_case

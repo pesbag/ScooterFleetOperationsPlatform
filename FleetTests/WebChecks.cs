@@ -88,7 +88,7 @@ public static class WebChecks
             var registration = await client.GetStringAsync("/Workspace/Register");
             Assert(!registration.Contains("http-equiv=\"refresh\""), "Registration input is not interrupted by automatic refresh");
             var dashboardHtml = await client.GetStringAsync("/");
-            Assert(dashboardHtml.Contains("Available bikes at stations") && dashboardHtml.Contains("not the total fleet size"), "Dashboard explains available counts and fleet size");
+            Assert(dashboardHtml.Contains("Available bikes at stations") && !dashboardHtml.Contains("Station analysis may be cached"), "Dashboard keeps availability labels without technical paragraphs");
             var confirmation = await client.GetStringAsync("/Workspace/Confirm?kind=alert&id=1&status=RESOLVED");
             var tokenMatch = System.Text.RegularExpressions.Regex.Match(confirmation, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"");
             var fields = new Dictionary<string,string> { ["kind"] = "alert", ["id"] = "1", ["status"] = "RESOLVED", ["__RequestVerificationToken"] = WebUtility.HtmlDecode(tokenMatch.Groups[1].Value) };
@@ -97,7 +97,23 @@ public static class WebChecks
             fields["id"] = "2";
             var failed = await client.PostAsync("/Workspace/Apply", new FormUrlEncodedContent(fields));
             Assert(failed.StatusCode == HttpStatusCode.Conflict && (await failed.Content.ReadAsStringAsync()).Contains("Saving failed"), "Simulated persistence failure is shown without a success redirect");
+            fields["kind"] = "recommendation";
+            fields["id"] = "1";
+            foreach (var status in new[] { "IN_PROGRESS", "COMPLETED" })
+            {
+                fields["status"] = status;
+                var changed = await client.PostAsync("/Workspace/Apply", new FormUrlEncodedContent(fields));
+                var location = changed.Headers.Location?.ToString() ?? "";
+                Assert(changed.StatusCode == HttpStatusCode.Redirect && location.Contains("Recommendations") && location.Contains(status),
+                    $"Task update returns to its new status filter: {status}");
+                var list = await client.GetStringAsync(location);
+                Assert(list.Contains($"class=\"task-status\">{StationApi.Models.ViewText.Label(status)}") && list.Contains("updated-task"),
+                    $"Updated task is visible with saved status: {status}");
+                if (status == "COMPLETED") Assert(!list.Contains("Mark completed"), "Completed task no longer offers completion");
+            }
+            Assert(dashboardHtml.Contains("account-actions") && dashboardHtml.Contains("/Workspace/Logout"), "Sign out is available above page content");
             var htmlLogin = await (await client.GetAsync("/Workspace/Login")).Content.ReadAsStringAsync();
+            Assert(htmlLogin.IndexOf("/Workspace/Register", StringComparison.Ordinal) < htmlLogin.IndexOf("</section>", htmlLogin.IndexOf("login-panel", StringComparison.Ordinal), StringComparison.Ordinal), "Registration link is inside the sign-in panel");
             Assert(htmlLogin.Contains("type=\"password\""), "Password input is masked");
             Assert((await client.PostAsync("/Workspace/Login", new FormUrlEncodedContent(new Dictionary<string, string> {
                 ["email"] = "admin@example.com", ["password"] = "test-password" }))).StatusCode == HttpStatusCode.BadRequest,
@@ -110,8 +126,16 @@ public static class WebChecks
 
     private sealed class FixtureHandler : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        private string taskStatus = "PENDING";
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request.Method == HttpMethod.Patch && request.RequestUri!.AbsolutePath == "/api/recommendations/1")
+            {
+                var payload = await request.Content!.ReadFromJsonAsync<JsonElement>(cancellationToken);
+                taskStatus = payload.GetProperty("status").GetString()!;
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { id = 1, status = taskStatus }) };
+            }
             var now = DateTime.UtcNow;
             var engine = new SmartFleetEngine(new());
             var stations = Enumerable.Range(1, 12).Select(i => engine.Analyze(new StationInput($"S{i:00}",
@@ -126,9 +150,9 @@ public static class WebChecks
             var user = new { id = 1, name = "Fleet Administrator", email = "admin@bike.local", role = "ADMIN", enabled = true, createdAt = now.AddDays(-20) };
             var alerts = new[] { new { id = 1, stationId = "S01", severity = "CRITICAL", status = "ACTIVE", title = "Harbor Promenade: availability risk", description = "Expected to run out in approximately 40 minutes at the recent net rate.", createdAt = now } };
             var moves = new[] { new { id = 1, sourceStationId = "S02", destinationStationId = "S01", quantity = 12,
-                priority = "CRITICAL", status = "PENDING", reason = "Move 12 bikes from Central Station to Harbor Promenade. Availability is declining at the destination.", createdAt = now } };
+                priority = "CRITICAL", status = taskStatus, reason = "Move 12 bikes from Central Station to Harbor Promenade. Availability is declining at the destination.", createdAt = now } };
             if (request.Method == HttpMethod.Patch && request.RequestUri!.AbsolutePath == "/api/alerts/2")
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Conflict) { Content = JsonContent.Create(new { message = "Saving failed. Try again." }) });
+                return new HttpResponseMessage(HttpStatusCode.Conflict) { Content = JsonContent.Create(new { message = "Saving failed. Try again." }) };
             object body = request.RequestUri!.AbsolutePath switch
             {
                 "/api/auth/me" or "/api/users/1" => user,
@@ -148,7 +172,7 @@ public static class WebChecks
                     stations, alerts, recommendations = moves },
                 _ => new { message = "Fixture route missing" }
             };
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body, options: new JsonSerializerOptions(JsonSerializerDefaults.Web)) });
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body, options: new JsonSerializerOptions(JsonSerializerDefaults.Web)) };
         }
     }
 }

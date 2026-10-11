@@ -2,22 +2,15 @@ using Bike_fleet_operation_platform.Dtos;
 using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Json;
-using System.Reflection.Metadata;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Bike_fleet_operation_platform.Services;
 
 public class VehicleTypesService
 {
-    private readonly IHttpClientFactory _httpClientFactory = null!;
-    private readonly IConfiguration _configuration = null!;
-    private readonly ILogger<VehicleTypesService> _logger = null!;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<VehicleTypesService> _logger;
     private readonly KafkaProducerServices _kafkaProducer;
 
     public VehicleTypesService(IHttpClientFactory httpClientFactory,
@@ -35,20 +28,15 @@ public class VehicleTypesService
         try
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            using JsonDocument document = await GbfsHttp.GetJson(client, "vehicle_types.json", _configuration.GetValue<int>("Http:MaxAttempts", 3), token);
+            using JsonDocument document = await GbfsHttp.GetJsonAsync(client, "vehicle_types.json", _configuration.GetValue<int>("Http:MaxAttempts", 3), token);
 
             JsonElement stationsElement = document.RootElement
              .GetProperty("data")
              .GetProperty("vehicle_types");
 
-            VehicleTypesDto[]? vehicleTypes = stationsElement.Deserialize<VehicleTypesDto[]>(options);
-            if (vehicleTypes is null)
-            {
-                _logger.LogError("\"error in deserialize vehicle types\"");
-                Console.WriteLine("\"error in deserialize vehicle types\"");
-            }
-            Console.WriteLine($"succesfully recived {(vehicleTypes?.Length ?? 0)} vehicle types information");
-            var sendTasks = (vehicleTypes ?? []).Select(content =>
+            var vehicleTypes = stationsElement.Deserialize<VehicleTypesDto[]>(options)
+                ?? throw new JsonException("GBFS vehicle_types must be an array.");
+            var sendTasks = vehicleTypes.Select(content =>
             {
                 var message = new Message<string, string>
                 {
@@ -60,12 +48,11 @@ public class VehicleTypesService
             });
             await Task.WhenAll(sendTasks);
             _kafkaProducer.Flush(TimeSpan.FromSeconds(10));
-            return vehicleTypes ?? [];
+            return vehicleTypes;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch(Exception ex)
         {
-            Console.WriteLine($"the error: {ex.Message}");
             _logger.LogError("GBFS vehicle types request failed: {Error}", ex);
         }
         throw new HttpRequestException("GBFS request failed. Existing source timestamps were left unchanged.");

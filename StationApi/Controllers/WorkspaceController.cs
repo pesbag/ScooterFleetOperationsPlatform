@@ -74,8 +74,8 @@ public class WorkspaceController(FleetApiClient api) : Controller
         return View(await api.Send($"/api/alerts?{Query("severity", severity)}&{Query("status", status)}&{Query("station", station)}"));
     }
     [HttpGet]
-    public async Task<IActionResult> Recommendations(string? status)
-    { ViewBag.Status = status; return View(await api.Send($"/api/recommendations?{Query("status", status)}")); }
+    public async Task<IActionResult> Recommendations(string? status, long? updatedId)
+    { ViewBag.UpdatedId = updatedId; ViewBag.Status = status; return View(await api.Send($"/api/recommendations?{Query("status", status)}")); }
     [HttpGet]
     public async Task<IActionResult> Users() => View(await api.Send("/api/users"));
     [HttpGet]
@@ -114,9 +114,14 @@ public class WorkspaceController(FleetApiClient api) : Controller
             "user" => $"/api/users/{id}/enabled", _ => null };
         if (path is null) return BadRequest();
         var saved = await api.Send(path, HttpMethod.Patch, kind == "user" ? new { enabled = status == "ENABLED" } : (object)new { status });
-        TempData["Success"] = "Work saved. Station status is recalculated from remaining issues and current provider readings.";
+        TempData["Success"] = kind == "recommendation"
+            ? $"Task #{id}: {Models.ViewText.Label(saved.GetProperty("status").GetString()!)}."
+            : "Changes saved.";
         if (kind == "alert" && saved.TryGetProperty("stationId", out var stationId)) return RedirectToAction(nameof(Station), new { id = stationId.GetString() });
-        if (kind == "recommendation" && saved.TryGetProperty("destinationStationId", out var destinationId)) return RedirectToAction(nameof(Station), new { id = destinationId.GetString() });
+        if (kind == "recommendation")
+        {
+            return RedirectToAction(nameof(Recommendations), new { status = saved.GetProperty("status").GetString(), updatedId = id });
+        }
         return RedirectToAction(kind switch { "alert" => nameof(Alerts), "user" => nameof(Users), _ => nameof(Recommendations) });
     }
     private static string Query(string key, string? value) => string.IsNullOrWhiteSpace(value) ? "" : $"{key}={Uri.EscapeDataString(value)}";

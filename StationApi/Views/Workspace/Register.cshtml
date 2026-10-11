@@ -6,5 +6,5 @@
 <label>Name<input asp-for="Name" minlength="2" maxlength="100" required autocomplete="name" /><span asp-validation-for="Name"></span></label>
 <label>Email<input asp-for="Email" type="email" maxlength="160" required autocomplete="email" /><span asp-validation-for="Email"></span></label>
 <label>Password<input name="Password" type="password" minlength="10" maxlength="128" required autocomplete="new-password" /><span asp-validation-for="Password"></span></label>
-<button class="button">Create account</button><p class="muted">After submitting, wait for the confirmation page. Duplicate accounts are prevented by the email uniqueness constraint.</p>
+<button class="button">Create account</button>
 </form><a asp-action="Login">Already registered? Sign in</a></section>

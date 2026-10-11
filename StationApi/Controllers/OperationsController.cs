@@ -48,7 +48,7 @@ public class OperationsController(OperationsDbContext db, OperationsGate gate, F
 
     [HttpGet("recommendations")]
     public async Task<IActionResult> Recommendations(string? status, CancellationToken token) => Ok(await data.WithNames(await db.Recommendations.AsNoTracking()
-        .Where(x => x.SourceStationId.StartsWith(config["DataSource:StationPrefix"]!) && x.DestinationStationId.StartsWith(config["DataSource:StationPrefix"]!) && (status == null || x.Status == status)).OrderByDescending(x => x.CreatedAt).Take(500).ToListAsync(token), token));
+        .Where(x => x.SourceStationId.StartsWith(config["DataSource:StationPrefix"]!) && x.DestinationStationId.StartsWith(config["DataSource:StationPrefix"]!) && (status == null || x.Status == status)).OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt).ThenByDescending(x => x.Id).Take(500).ToListAsync(token), token));
     [HttpGet("recommendations/{id:long}")]
     public async Task<IActionResult> Recommendation(long id) => await db.Recommendations.FindAsync(id) is { } item ? Ok(item) : NotFound();
 

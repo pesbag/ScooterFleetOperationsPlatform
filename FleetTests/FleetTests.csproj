@@ -4,7 +4,7 @@
   <ItemGroup>
     <Compile Include="../Bike_fleet_operation_platform/Dtos/StationStatusDto.cs" Link="IngestionStationStatusDto.cs" />
     <Compile Include="../Bike_fleet_operation_platform/Services/GbfsHttp.cs" Link="GbfsHttp.cs" />
-    <Compile Include="../Bike_fleet_operation_platform/Services/GbfsJson.cs" Link="GbfsJson.cs" />
+    <Compile Include="../Bike_fleet_operation_platform/Services/GbfsFlagConverter.cs" Link="GbfsFlagConverter.cs" />
     <Compile Include="../Bike_fleet_operation_platform/Dtos/StationInformationDto.cs" Link="StationInformationDto.cs" />
     <Compile Include="../ProcessingService/Dtos/StationStatusDto.cs" Link="ProcessingStationStatusDto.cs" />
   </ItemGroup>

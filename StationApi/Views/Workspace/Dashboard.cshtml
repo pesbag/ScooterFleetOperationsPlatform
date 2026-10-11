@@ -1,19 +1,17 @@
 @model JsonElement
 @{ ViewData["Title"] = "Overview"; var stations = Model.GetProperty("stations").EnumerateArray().ToList(); var moves = Model.GetProperty("recommendations").EnumerateArray().Take(2); }
-<header class="page-header"><div><span class="eyebrow">YOUR FLEET AT A GLANCE</span><h1>Operations overview</h1><p>See what needs attention. Make the next move count.</p></div><a class="button secondary" asp-action="Dashboard">↻ Refresh overview</a></header>
+<header class="page-header"><div><span class="eyebrow">YOUR FLEET AT A GLANCE</span><h1>Operations overview</h1></div><a class="button secondary" asp-action="Dashboard">↻ Refresh overview</a></header>
 <div class="context-bar"><span><span class="live-dot"></span>Page generated @Model.Time("updatedAt")</span><span class="badge neutral">@Model.Text("dataMode") data</span></div>
-@if (Model.Number("stale") > 0) { <div class="notice warning">@Model.Text("stale") stations have missing, invalid or outdated data. Predictions and new moves are withheld for those stations.</div> }
-<p class="muted">Current valid readings: @Model.Text("currentStations") / @Model.Text("totalStations") stations. Latest source report: @Model.Time("lastReportedAt"). Latest receipt: @Model.Time("lastReceivedAt"). Individual station times appear below.</p>
-<p class="muted">Available counts are not the total fleet size; vehicles in use or maintenance may be excluded.</p>
-<p class="muted">Station analysis may be cached for up to 60 seconds. Source timestamps remain unchanged.</p>
+@if (Model.Number("stale") > 0) { <div class="notice warning">@Model.Text("stale") stations have no current data.</div> }
+<p class="muted">Latest report: @Model.Time("lastReportedAt") · Current stations: @Model.Text("currentStations") / @Model.Text("totalStations")</p>
 <div class="metrics">
     @foreach (var item in new[] { ("Available bikes at stations", "availableBikes", "Current valid readings only"), ("Healthy stations", "healthy", "Balanced and ready"), ("Warning stations", "warning", "Watch closely"), ("Critical stations", "critical", "Needs attention") })
     { <article class="metric @item.Item2"><span>@item.Item1</span><strong>@Model.Text(item.Item2)</strong><small>@item.Item3</small></article> }
 </div>
 <div class="mini-metrics"><span><strong>@Model.Text("availableCapacity")</strong> available spaces (current valid readings)</span><span><strong>@Model.Text("activeAlerts")</strong> active alerts</span><span><strong>@Model.Text("pendingRecommendations")</strong> open tasks</span></div>
-<section class="panel"><div class="section-heading"><div><span class="eyebrow">STATION HEALTH</span><h2>Priority watchlist</h2><p class="muted">The six highest-risk stations, not the status of the whole network.</p></div><a asp-action="Stations">View all stations →</a></div><partial name="_StationTable" model="stations.Take(6)" /></section>
+<section class="panel"><div class="section-heading"><div><span class="eyebrow">STATION HEALTH</span><h2>Priority watchlist</h2><p class="muted">Top 6 by risk.</p></div><a asp-action="Stations">View all stations →</a></div><partial name="_StationTable" model="stations.Take(6)" /></section>
 <div class="two-column"><section><div class="section-heading"><h2>Recommended moves</h2><a asp-action="Recommendations">All tasks →</a></div><partial name="_Recommendations" model="moves" /></section>
 <section><div class="section-heading"><h2>Active alerts</h2><a asp-action="Alerts">All alerts →</a></div>
 @foreach (var alert in Model.GetProperty("alerts").EnumerateArray()) { <article class="alert-card"><span class="badge @alert.Text("severity").ToLowerInvariant()">@ViewText.Label(alert.Text("severity"))</span><h3>@alert.Text("title")</h3><p>@alert.Text("description")</p><a asp-action="Station" asp-route-id="@alert.Text("stationId")">View station →</a></article> }
-@if (Model.GetProperty("alerts").GetArrayLength() == 0) { <div class="empty">No active alerts. The next analysis runs within 30 seconds.</div> }
+@if (Model.GetProperty("alerts").GetArrayLength() == 0) { <div class="empty">No active alerts.</div> }
 </section></div>
