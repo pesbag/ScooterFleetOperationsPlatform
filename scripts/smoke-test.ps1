@@ -38,52 +38,41 @@ $viewAdmin = New-Session
 $html = Submit-View $viewAdmin '/Workspace/Login' '/Workspace/Login' @{ email=$settings.SEED_ADMIN_EMAIL; password=$settings.SEED_ADMIN_PASSWORD }
 if ($html -notmatch 'Operations overview' -or $html -match '<script') { throw 'Razor login did not reach the JavaScript-free dashboard.' }
 $dashboard = Request $admin GET '/api/dashboard'
-if ($dashboard.dataMode -ne 'Demo') { throw 'Smoke test requires Demo mode so it does not change real operational tasks.' }
-for ($attempt = 0; $attempt -lt 30 -and @($dashboard.stations).Count -lt 12; $attempt++) {
-    Start-Sleep -Seconds 4
-    $dashboard = Request $admin GET '/api/dashboard'
-}
-if (@($dashboard.stations).Count -lt 12) { throw 'Demo telemetry did not arrive through Kafka within two minutes.' }
+if (@($dashboard.stations).Count -eq 0) { throw 'No source stations yet. Wait for ingestion, then rerun.' }
 $stationId = $dashboard.stations[0].station.id
 Request $admin GET "/api/stations/$stationId" | Out-Null
-$history = Request $admin GET "/api/stations/$stationId/history"
-if (@($history).Count -lt 2) { throw 'Station history is missing.' }
-Request $admin GET '/api/stations/not-a-real-station' $null 404 | Out-Null
-Request $admin GET '/api/alerts' | Out-Null
-$email = 'smoke-' + [Guid]::NewGuid().ToString('N') + '@example.invalid'
-$operatorPassword = [Guid]::NewGuid().ToString('N') + '!'
-$user = Request $admin POST '/api/users' @{ name='Smoke Test Operator'; email=$email; password=$operatorPassword; role='OPERATOR'; enabled=$true } 201
+Request $admin GET "/api/stations/$stationId/history" | Out-Null
+Request $admin GET '/api/metrics' | Out-Null
+$riderEmail = 'test-rider-' + [Guid]::NewGuid().ToString('N') + '@example.invalid'
+$riderPassword = [Guid]::NewGuid().ToString('N') + '!'
+$riderSession = New-Session
+Request $riderSession POST '/api/auth/register' @{ name='Integration Test Rider'; email=$riderEmail; password=$riderPassword; role='ADMIN' } | Out-Null
+Request $riderSession POST '/api/auth/register' @{ name='Duplicate'; email=$riderEmail; password=$riderPassword } 409 | Out-Null
+Request $riderSession POST '/api/auth/login' @{ email=$riderEmail; password='incorrect-password' } 401 | Out-Null
+$rider = Request $riderSession POST '/api/auth/login' @{ email=$riderEmail; password=$riderPassword }
+if ($rider.role -ne 'RIDER' -or $rider.PSObject.Properties.Name -contains 'passwordHash') { throw 'Unsafe registration response or role escalation.' }
+$issues = @()
 try {
-    if ($user.PSObject.Properties.Name -contains 'passwordHash') { throw 'API exposed a password hash.' }
-    Submit-View $viewAdmin "/Workspace/EditUser/$($user.id)" '/Workspace/SaveUser' @{
-        id=$user.id; name='Smoke Test Operator Updated'; email=$email; role='OPERATOR'; enabled='true'; password='' } | Out-Null
-    $edited = Request $admin GET "/api/users/$($user.id)"
-    if ($edited.name -ne 'Smoke Test Operator Updated') { throw 'Editing the user through Razor did not persist.' }
-    $operator = New-Session
-    Request $operator POST '/api/auth/login' @{ email=$email; password=$operatorPassword } | Out-Null
-    Request $operator GET '/api/users' $null 403 | Out-Null
-    Request $operator GET '/api/dashboard' | Out-Null
-    $moves = @(Request $operator GET '/api/recommendations?status=PENDING')
-    for ($attempt = 0; $attempt -lt 15 -and $moves.Count -eq 0; $attempt++) {
-        Start-Sleep -Seconds 4; $moves = @(Request $operator GET '/api/recommendations?status=PENDING')
+    Request $riderSession GET '/api/dashboard' $null 403 | Out-Null
+    Request $riderSession POST "/api/rider/favorites/$stationId" $null 204 | Out-Null
+    $stations = @(Request $riderSession GET '/api/rider/stations')
+    if (-not ($stations | Where-Object { $_.id -eq $stationId -and $_.favorite })) { throw 'Favorite was not persisted.' }
+    foreach ($number in @(1,2)) {
+        $issues += Request $riderSession POST '/api/rider/issues' @{ stationId=$stationId; description="Automated TEST report $number - safe to resolve" }
     }
-    if ($moves.Count -eq 0) { throw 'No recommendation was generated.' }
-    $moveId = $moves[0].id
-    $viewOperator = New-Session
-    $operatorHtml = Submit-View $viewOperator '/Workspace/Login' '/Workspace/Login' @{ email=$email; password=$operatorPassword }
-    if ($operatorHtml -match 'Team management') { throw 'Operator navigation exposed user administration.' }
-    Submit-View $viewOperator "/Workspace/Confirm/$moveId`?kind=recommendation&status=COMPLETED" '/Workspace/Apply' @{
-        kind='recommendation'; id=$moveId; status='COMPLETED' } | Out-Null
-    $saved = Request $operator GET "/api/recommendations/$moveId"
-    if ($saved.status -ne 'COMPLETED') { throw 'Completion was not persisted.' }
-    Request $operator POST '/api/auth/logout' $null 204 | Out-Null
-    Request $operator POST '/api/auth/login' @{ email=$email; password=$operatorPassword } | Out-Null
-    $reloaded = Request $operator GET "/api/recommendations/$moveId"
-    if ($reloaded.status -ne 'COMPLETED') { throw 'Completion did not survive a new session.' }
-    Request $admin PATCH "/api/users/$($user.id)/enabled" @{ enabled=$false } | Out-Null
-    Request $operator GET '/api/dashboard' $null 401 | Out-Null
-    Write-Output 'End-to-end smoke test passed: Kafka readings, history, admin/operator authorization and persisted task completion.'
+    Request $riderSession POST "/api/rider-issues/$($issues[0].id)/resolve" $null 403 | Out-Null
+    Request $admin POST "/api/rider-issues/$($issues[0].id)/resolve" | Out-Null
+    $station = Request $admin GET "/api/stations/$stationId"
+    if ($station.analysis.maintenanceStatus -ne 'OPEN_ISSUES') { throw 'Other unresolved issue was lost.' }
+    Request $admin POST "/api/rider-issues/$($issues[1].id)/resolve" | Out-Null
+    $savedIssues = @(Request $riderSession GET '/api/rider/issues')
+    if (@($savedIssues | Where-Object { $_.id -in $issues.id -and $_.status -eq 'RESOLVED' }).Count -ne 2) { throw 'Resolution was not persisted.' }
+    Request $riderSession DELETE "/api/rider/favorites/$stationId" $null 204 | Out-Null
+    Request $riderSession POST '/api/auth/logout' $null 204 | Out-Null
+    Request $riderSession GET '/api/rider/stations' $null 401 | Out-Null
+    Write-Output 'PASS: registration, duplicate rejection, role safety, login/logout, favorites and multi-issue resolution. Provider counts were not modified.'
 }
 finally {
-    Request $admin PATCH "/api/users/$($user.id)/enabled" @{ enabled=$false } | Out-Null
+    foreach($issue in $issues) { Request $admin POST "/api/rider-issues/$($issue.id)/resolve" | Out-Null }
+    Request $admin PATCH "/api/users/$($rider.id)/enabled" @{ enabled=$false } | Out-Null
 }

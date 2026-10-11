@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -27,4 +27,5 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup><Compile Include="../Shared/FleetCacheContract.cs" Link="Shared/FleetCacheContract.cs" /></ItemGroup>
 </Project>

@@ -3,8 +3,8 @@
 {
     <article class="recommendation">
         <div class="card-top"><span class="badge @item.Text("priority").ToLowerInvariant()">@ViewText.Label(item.Text("priority")) priority</span><span class="muted">#@item.Text("id") · @ViewText.Label(item.Text("status"))</span></div>
-        <h3>Move @item.Text("quantity") scooters</h3>
-        <div class="route"><strong>@item.Text("sourceStationId")</strong><span>⟶</span><strong>@item.Text("destinationStationId")</strong></div>
+        <h3>Move @item.Text("quantity") bikes</h3>
+        <div class="route"><div><strong>@item.StationName("sourceStationName", "sourceStationId")</strong><small class="muted">@item.Text("sourceStationId")</small></div><span>⟶</span><div><strong>@item.StationName("destinationStationName", "destinationStationId")</strong><small class="muted">@item.Text("destinationStationId")</small></div></div>
         <p>@item.Text("reason")</p><small>Created @item.Time("createdAt")</small>
         @if (item.Text("status") is "PENDING" or "IN_PROGRESS")
         {

@@ -28,15 +28,14 @@ public class VehicleTypesService
         (httpClientFactory, configuration, logger,kafkaProducer);
 
 
-    public async Task<VehicleTypesDto[]> GetVehicleTypesDtoAsync(string topic)
+    public async Task<VehicleTypesDto[]> GetVehicleTypesDtoAsync(string topic, CancellationToken token = default)
     {
         string? httpClientName = _configuration["StationInformation"] ?? "LyftStationClient";
         HttpClient client = _httpClientFactory.CreateClient(httpClientName);
         try
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            using JsonDocument document = await client.GetFromJsonAsync<JsonDocument>("vehicle_types.json")
-                ?? throw new InvalidOperationException("failed to read json document");
+            using JsonDocument document = await GbfsHttp.GetJson(client, "vehicle_types.json", _configuration.GetValue<int>("Http:MaxAttempts", 3), token);
 
             JsonElement stationsElement = document.RootElement
              .GetProperty("data")
@@ -57,17 +56,18 @@ public class VehicleTypesService
                     Value = JsonSerializer.Serialize(content)
                 };
 
-                return _kafkaProducer.SendToKafkaAsync(topic, message);
+                return _kafkaProducer.SendToKafkaAsync(topic, message, token);
             });
             await Task.WhenAll(sendTasks);
             _kafkaProducer.Flush(TimeSpan.FromSeconds(10));
             return vehicleTypes ?? [];
         }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch(Exception ex)
         {
             Console.WriteLine($"the error: {ex.Message}");
-            _logger.LogError("error getting something fun to say: {Error}", ex);
+            _logger.LogError("GBFS vehicle types request failed: {Error}", ex);
         }
-        return [];
+        throw new HttpRequestException("GBFS request failed. Existing source timestamps were left unchanged.");
     }
 }

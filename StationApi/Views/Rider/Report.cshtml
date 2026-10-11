@@ -1,0 +1,10 @@
+@model JsonElement
+@{ ViewData["Title"] = "Issue reports"; }
+<h1>Report an issue</h1>
+@if(ViewBag.Error is string error) { <p class="notice warning">@error</p> }
+@if(!string.IsNullOrWhiteSpace((string?)ViewBag.StationId)) {
+<form asp-action="Report" method="post" class="panel padded narrow"><input type="hidden" name="stationId" value="@ViewBag.StationId" /><label>What is wrong at this station?<textarea name="description" minlength="5" maxlength="1000" required></textarea></label><button class="button">Send report</button></form>
+}
+<h2>My reports</h2>
+@foreach(var issue in Model.EnumerateArray()) { <article class="alert-card"><strong>@issue.StationName("stationName", "stationId") · @issue.Text("status")</strong><small class="muted">@issue.Text("stationId")</small><p>@issue.Text("description")</p><small>@issue.Time("createdAt")</small></article> }
+<a asp-action="Index">Back to stations</a>

@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 
 namespace Bike_fleet_operation_platform.Services;
 
@@ -17,11 +17,11 @@ public class KafkaProducerServices : IDisposable
     {
         _producer.Flush(timeout);
     }
-    public async Task SendToKafkaAsync(string topicName, Message<string,string> content)
+    public async Task SendToKafkaAsync(string topicName, Message<string,string> content, CancellationToken token = default)
     {
         try
         {
-            var result = await _producer.ProduceAsync(topicName, content);
+            var result = await _producer.ProduceAsync(topicName, content, token);
             Console.WriteLine($"delivered station {content.Key} to partition {result.Partition.Value} at offset {result.Offset.Value}");
         }
         catch (ProduceException<string, string> ex)

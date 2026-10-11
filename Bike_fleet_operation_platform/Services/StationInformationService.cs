@@ -28,7 +28,7 @@ public class StationInformationService
         (_httpClientFactory, _configuration, _logger, _kafkaProducer) =
             (httpClientFactory, configuration, logger, kafkaProducer);
 
-    public async Task<StationInformationDto[]> GetStationsInformationAsync(string topic)
+    public async Task<StationInformationDto[]> GetStationsInformationAsync(string topic, CancellationToken token = default)
     {
         // create the client
         string? httpClientName = _configuration["StationInformation"] ?? "LyftStationClient";
@@ -37,14 +37,10 @@ public class StationInformationService
         try
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            using JsonDocument document = await client.GetFromJsonAsync<JsonDocument>("station_information.json")
-                ?? throw new InvalidOperationException("failed to read json document");
+            using JsonDocument document = await GbfsHttp.GetJson(client, "station_information.json", _configuration.GetValue<int>("Http:MaxAttempts", 3), token);
 
-            JsonElement stationsElement = document.RootElement
-            .GetProperty("data")
-            .GetProperty("stations");
-
-            StationInformationDto[]? stationsInformation = stationsElement.Deserialize<StationInformationDto[]>(options);
+            StationInformationDto[] stationsInformation = GbfsJson.Stations(document.RootElement, null)
+                .Select(x => x.Deserialize<StationInformationDto>(options)!).ToArray();
             if (stationsInformation is null)
             {
                 _logger.LogError("\"error in deserialize stations information\"");
@@ -56,6 +52,8 @@ public class StationInformationService
 
             foreach (var station in stationsInformation ?? [])
             {
+                if (string.IsNullOrWhiteSpace(station.Station_id)) { _logger.LogWarning("GBFS station without an ID was skipped."); continue; }
+                station.Station_id = _configuration["DataSource:StationPrefix"] + station.Station_id;
                 var validationContext = new ValidationContext(station);
                 var validationResults = new List<ValidationResult>();
 
@@ -79,18 +77,19 @@ public class StationInformationService
                     Value = JsonSerializer.Serialize(content)
                 };
 
-                return _kafkaProducer.SendToKafkaAsync(topic, message);
+                return _kafkaProducer.SendToKafkaAsync(topic, message, token);
             });
 
             await Task.WhenAll(sendTasks);
             _kafkaProducer.Flush(TimeSpan.FromSeconds(10));
             return stationsInformation ?? [];
         }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             Console.WriteLine($"the error: {ex.Message}");
-            _logger.LogError("Error getting something fun to say: {Error}", ex);
+            _logger.LogError("GBFS station information request failed: {Error}", ex);
         }
-        return [];
+        throw new HttpRequestException("GBFS request failed. Existing source timestamps were left unchanged.");
     }
 }

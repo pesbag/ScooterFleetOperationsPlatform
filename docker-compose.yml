@@ -84,7 +84,7 @@ services:
       dockerfile: Bike_fleet_operation_platform/Dockerfile
     environment:
       Kafka__BootstrapServices: broker:29092
-      DataSource__Mode: ${DATA_SOURCE_MODE:-Demo}
+      DataSource__StationPrefix: ${GBFS_STATION_PREFIX:-citibike:}
       DataSource__BaseUrl: ${GBFS_BASE_URL:-https://gbfs.lyft.com/gbfs/2.3/bkn/en/}
     depends_on:
       broker: { condition: service_healthy }
@@ -99,12 +99,15 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: 8080
       ApiBaseUrl: http://localhost:8080
+      Ui__RefreshSeconds: ${UI_REFRESH_SECONDS:-60}
       ConnectionStrings__DefaultConnection: Server=db;Port=3306;Database=stationDb;User=root;Password=${MYSQL_ROOT_PASSWORD};
       ConnectionStrings__OperationsConnection: Server=db;Port=3306;Database=fleetOperationsDb;User=root;Password=${MYSQL_ROOT_PASSWORD};
       MongoDb__ConnectionString: mongodb://mongo:27017
       SeedAdmin__Email: ${SEED_ADMIN_EMAIL:?Set SEED_ADMIN_EMAIL in .env}
       SeedAdmin__Password: ${SEED_ADMIN_PASSWORD:?Set SEED_ADMIN_PASSWORD in .env}
-      DataSource__Mode: ${DATA_SOURCE_MODE:-Demo}
+      Redis__ConnectionString: redis:6379,abortConnect=false,connectTimeout=1000,asyncTimeout=1000,connectRetry=0
+      DataSource__StationPrefix: ${GBFS_STATION_PREFIX:-citibike:}
+      DataSource__BaseUrl: ${GBFS_BASE_URL:-https://gbfs.lyft.com/gbfs/2.3/bkn/en/}
     ports: ["127.0.0.1:${APP_PORT:-8080}:8080"]
     volumes: [api_keys:/root/.aspnet/DataProtection-Keys]
     depends_on:

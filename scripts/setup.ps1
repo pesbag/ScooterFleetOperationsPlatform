@@ -11,8 +11,8 @@ function New-LocalPassword {
 }
 $databasePassword = New-LocalPassword
 $administratorPassword = New-LocalPassword
-$lines = @("MYSQL_ROOT_PASSWORD=$databasePassword", 'SEED_ADMIN_EMAIL=admin@scooter.local',
-    "SEED_ADMIN_PASSWORD=$administratorPassword", 'DATA_SOURCE_MODE=Demo',
-    'GBFS_BASE_URL=https://gbfs.lyft.com/gbfs/2.3/bkn/en/', 'APP_PORT=8080')
+$lines = @("MYSQL_ROOT_PASSWORD=$databasePassword", 'SEED_ADMIN_EMAIL=admin@bike.local',
+    "SEED_ADMIN_PASSWORD=$administratorPassword",
+    'GBFS_BASE_URL=https://gbfs.lyft.com/gbfs/2.3/bkn/en/', 'GBFS_STATION_PREFIX=citibike:', 'UI_REFRESH_SECONDS=60', 'APP_PORT=8080')
 [System.IO.File]::WriteAllLines($envPath, $lines, (New-Object System.Text.UTF8Encoding($false)))
 Write-Output 'Created .env with randomly generated local credentials. Open it locally to read the admin login. Do not commit it.'

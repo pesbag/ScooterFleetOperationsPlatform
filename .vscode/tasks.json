@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
   "tasks": [
-    { "label": "Build Scooter Fleet", "type": "process", "command": "dotnet", "args": ["build", "ScooterFleet.sln"], "group": { "kind": "build", "isDefault": true }, "problemMatcher": "$msCompile" },
+    { "label": "Build Bike Fleet", "type": "process", "command": "dotnet", "args": ["build", "BikeFleet.sln"], "group": { "kind": "build", "isDefault": true }, "problemMatcher": "$msCompile" },
     { "label": "Run business tests", "type": "process", "command": "dotnet", "args": ["run", "--project", "FleetTests"], "problemMatcher": "$msCompile" },
     { "label": "Start full platform", "type": "process", "command": "docker", "args": ["compose", "up", "-d", "--build"], "problemMatcher": [] }
   ]

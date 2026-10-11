@@ -1,0 +1,11 @@
+{
+  "folders": [
+    {
+      "name": "Bike Fleet",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "window.title": "Bike Fleet - ${activeEditorShort}"
+  }
+}

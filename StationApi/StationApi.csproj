@@ -12,7 +12,9 @@
     <PackageReference Include="MongoDB.Bson" Version="3.11.2" />
     <PackageReference Include="MongoDB.Driver" Version="3.11.2" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0" />
+    <PackageReference Include="StackExchange.Redis" Version="3.2.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup><Compile Include="../Shared/FleetCacheContract.cs" Link="Shared/FleetCacheContract.cs" /></ItemGroup>
 </Project>

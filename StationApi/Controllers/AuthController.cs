@@ -12,6 +12,14 @@ using StationApi.DataDbContext;
 using StationApi.Models;
 
 namespace StationApi.Controllers;
+public class RegisterRequest
+{
+    [Required, StringLength(100, MinimumLength = 2)] public string Name { get; set; } = "";
+    [Required, EmailAddress, StringLength(160)] public string Email { get; set; } = "";
+    [Required, StringLength(128, MinimumLength = 10)] public string Password { get; set; } = "";
+    public RegisterRequest() { }
+    public RegisterRequest(string name, string email, string password) { Name = name; Email = email; Password = password; }
+}
 public record LoginRequest([Required, EmailAddress] string Email, [Required] string Password);
 public record UserView(int Id, string Name, string Email, string Role, bool Enabled, DateTime CreatedAt)
 {
@@ -34,6 +42,17 @@ public class AuthController(OperationsDbContext db, IPasswordHasher<FleetUser> p
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)));
         return Ok(UserView.From(user));
+    }
+    [HttpPost("register"), AllowAnonymous, EnableRateLimiting("login")]
+    public async Task<IActionResult> Register(RegisterRequest request)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+        if (await db.Users.AnyAsync(x => x.Email == email)) return Conflict(new { message = "This email is already registered." });
+        var user = new FleetUser { Name = request.Name.Trim(), Email = email, Role = "RIDER" };
+        user.PasswordHash = passwords.HashPassword(user, request.Password);
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        return Ok(new { message = "Account created. You can sign in now." });
     }
     [HttpGet("me"), Authorize]
     public async Task<IActionResult> Me() => Ok(UserView.From((await db.Users.FindAsync(int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))!));

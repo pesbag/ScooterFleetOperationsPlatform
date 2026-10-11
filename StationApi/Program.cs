@@ -1,3 +1,4 @@
+using StackExchange.Redis;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -11,16 +12,22 @@ using StationApi.Repository;
 using StationApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+if (string.IsNullOrWhiteSpace(builder.Configuration["DataSource:StationPrefix"]))
+    throw new InvalidOperationException("Set DataSource:StationPrefix to the same value as ingestion.");
+if (builder.Configuration.GetValue<int>("Ui:RefreshSeconds") is < 15 or > 600)
+    throw new InvalidOperationException("Ui:RefreshSeconds must be between 15 and 600.");
 builder.Services.AddDbContext<StationDbContext>(o => o.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), new MySqlServerVersion(new Version(8, 4, 0))));
 builder.Services.AddDbContext<OperationsDbContext>(o => o.UseMySql(builder.Configuration.GetConnectionString("OperationsConnection"), new MySqlServerVersion(new Version(8, 4, 0))));
 builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(builder.Configuration["MongoDb:ConnectionString"]));
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(builder.Configuration["MongoDb:DatabaseName"]));
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(
+    builder.Configuration["Redis:ConnectionString"] ?? throw new InvalidOperationException("Set Redis:ConnectionString.")));
 builder.Services.AddScoped<IStationRepository, StationRepository>();
 builder.Services.AddScoped<IPasswordHasher<FleetUser>, PasswordHasher<FleetUser>>();
 builder.Services.AddAntiforgery(o => o.HeaderName = "X-CSRF-TOKEN");
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o =>
 {
-    o.Cookie.Name = "ScooterFleet.Session"; o.Cookie.HttpOnly = true; o.Cookie.SameSite = SameSiteMode.Strict;
+    o.Cookie.Name = "BikeFleet.Session"; o.Cookie.HttpOnly = true; o.Cookie.SameSite = SameSiteMode.Strict;
     o.ExpireTimeSpan = TimeSpan.FromHours(8); o.SlidingExpiration = false;
     o.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; };
     o.Events.OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = 403; return Task.CompletedTask; };
@@ -51,7 +58,10 @@ builder.Services.AddEndpointsApiExplorer(); builder.Services.AddSwaggerGen();
 var fleetOptions = builder.Configuration.GetSection("SmartFleet").Get<FleetOptions>() ?? new();
 if (!fleetOptions.IsValid()) throw new InvalidOperationException("Invalid SmartFleet thresholds.");
 builder.Services.AddSingleton(fleetOptions); builder.Services.AddSingleton<SmartFleetEngine>();
+builder.Services.AddSingleton<FleetCacheState>();
+builder.Services.AddScoped<StationStateService>();
 builder.Services.AddSingleton<OperationsGate>(); builder.Services.AddScoped<FleetDataService>();
+builder.Services.AddScoped<MetricsService>();
 builder.Services.AddScoped<OperationsService>(); builder.Services.AddHostedService<FleetAnalysisWorker>();
 builder.Services.AddDataProtection();
 var app = builder.Build();
@@ -96,6 +106,7 @@ for (var attempt = 1; ; attempt++)
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<OperationsDbContext>();
         await db.Database.EnsureCreatedAsync();
+        await OperationsSchema.Upgrade(db);
         if (!await db.Users.AnyAsync())
         {
             var email = builder.Configuration["SeedAdmin:Email"];

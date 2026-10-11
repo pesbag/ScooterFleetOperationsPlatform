@@ -11,7 +11,7 @@ using StationApi.Models;
 namespace StationApi.Controllers;
 public record UserRequest([Required, StringLength(100, MinimumLength = 2)] string Name,
     [Required, EmailAddress, StringLength(160)] string Email,
-    [Required, RegularExpression("^(ADMIN|OPERATOR)$")] string Role, bool Enabled,
+    [Required, RegularExpression("^(ADMIN|OPERATOR|RIDER)$")] string Role, bool Enabled,
     [StringLength(128, MinimumLength = 10)] string? Password);
 public record EnabledRequest(bool Enabled);
 [ApiController, Authorize(Roles = "ADMIN"), Route("api/users")]

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -14,14 +14,15 @@ public class StationStatusDto
     [BsonId]
     public string Station_id { get; set; } = string.Empty;
     [Range(0,int.MaxValue)]
-    public int Num_bikes_available { get; set; }
+    public int? Num_bikes_available { get; set; }
     [Range(0, int.MaxValue)]
-    public int Nun_vehicles_available { get; set; }
+    public int? Nun_vehicles_available { get; set; }
     [Range(0, int.MaxValue)]
-    public int Num_docs_available { get; set; }
-    public int Is_renting { get; set; }
-    public int Is_returning { get; set; }
-    public long Last_reported { get; set; }
+    public int? Num_docs_available { get; set; }
+    public int? Is_renting { get; set; }
+    public int? Is_returning { get; set; }
+    public long? Last_reported { get; set; }
+    public DateTime? ReceivedAt { get; set; }
 
     public bool HasChangedFrom(StationStatusDto? other)
     {

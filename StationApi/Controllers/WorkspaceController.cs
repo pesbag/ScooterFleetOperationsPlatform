@@ -10,9 +10,14 @@ public class WorkspaceController(FleetApiClient api) : Controller
 {
     public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        if (context.ActionDescriptor.RouteValues["action"] != nameof(Login))
+        if (context.ActionDescriptor.RouteValues["action"] is not (nameof(Login) or nameof(Register)))
         {
-            try { ViewBag.CurrentUser = await api.Send("/api/auth/me"); }
+            try
+            {
+                var user = await api.Send("/api/auth/me"); ViewBag.CurrentUser = user;
+                if (user.GetProperty("role").GetString() == "RIDER" && context.ActionDescriptor.RouteValues["action"] is not (nameof(Profile) or nameof(Logout)))
+                { context.Result = RedirectToAction("Index", "Rider"); return; }
+            }
             catch (ApiFailure ex) when (ex.Status == HttpStatusCode.Unauthorized) { context.Result = RedirectToAction(nameof(Login)); return; }
         }
         var result = await next();
@@ -31,6 +36,22 @@ public class WorkspaceController(FleetApiClient api) : Controller
         try { await api.Send("/api/auth/login", HttpMethod.Post, new { email, password }); return RedirectToAction(nameof(Dashboard)); }
         catch (ApiFailure ex) { ViewBag.Error = ex.Message; ViewBag.Email = email; return View(); }
     }
+    [HttpGet]
+    public IActionResult Register() => View();
+    [HttpPost]
+    public async Task<IActionResult> Register(RegisterRequest request)
+    {
+        if (!ModelState.IsValid) { request.Password = ""; return View(request); }
+        try { await api.Send("/api/auth/register", HttpMethod.Post, request); TempData["Success"] = "Account created. Please sign in."; return RedirectToAction(nameof(Login)); }
+        catch (ApiFailure ex) { ModelState.AddModelError("", ex.Message); request.Password = ""; return View(request); }
+    }
+    [HttpGet]
+    public async Task<IActionResult> Metrics() => View(await api.Send("/api/metrics"));
+    [HttpGet]
+    public async Task<IActionResult> Reports() => View(await api.Send("/api/rider-issues"));
+    [HttpPost]
+    public async Task<IActionResult> ResolveReport(long id)
+    { await api.Send($"/api/rider-issues/{id}/resolve", HttpMethod.Post); return RedirectToAction(nameof(Reports)); }
     [HttpPost]
     public async Task<IActionResult> Logout() { await api.Send("/api/auth/logout", HttpMethod.Post); return RedirectToAction(nameof(Login)); }
     [HttpGet]
@@ -92,8 +113,10 @@ public class WorkspaceController(FleetApiClient api) : Controller
         var path = kind switch { "alert" => $"/api/alerts/{id}", "recommendation" => $"/api/recommendations/{id}",
             "user" => $"/api/users/{id}/enabled", _ => null };
         if (path is null) return BadRequest();
-        await api.Send(path, HttpMethod.Patch, kind == "user" ? new { enabled = status == "ENABLED" } : (object)new { status });
-        TempData["Success"] = "Changes saved.";
+        var saved = await api.Send(path, HttpMethod.Patch, kind == "user" ? new { enabled = status == "ENABLED" } : (object)new { status });
+        TempData["Success"] = "Work saved. Station status is recalculated from remaining issues and current provider readings.";
+        if (kind == "alert" && saved.TryGetProperty("stationId", out var stationId)) return RedirectToAction(nameof(Station), new { id = stationId.GetString() });
+        if (kind == "recommendation" && saved.TryGetProperty("destinationStationId", out var destinationId)) return RedirectToAction(nameof(Station), new { id = destinationId.GetString() });
         return RedirectToAction(kind switch { "alert" => nameof(Alerts), "user" => nameof(Users), _ => nameof(Recommendations) });
     }
     private static string Query(string key, string? value) => string.IsNullOrWhiteSpace(value) ? "" : $"{key}={Uri.EscapeDataString(value)}";

@@ -1,4 +1,4 @@
-﻿using ProcessingService.DataDbContext;
+using ProcessingService.DataDbContext;
 using ProcessingService.Dtos;
 using System;
 using System.Collections.Generic;
@@ -12,9 +12,10 @@ namespace ProcessingService.Handler;
 public class VehicleTypesHandler:IKafkaMessageHandler
 {
     private readonly StationDbContext _context;
-    public string Topic => "bike.vehicle-types";
-    public VehicleTypesHandler(StationDbContext context)
+    public string Topic { get; }
+    public VehicleTypesHandler(StationDbContext context, Microsoft.Extensions.Configuration.IConfiguration config)
     {
+        Topic = config["Kafka:Topics:VehicleTypes"] ?? throw new InvalidOperationException("Missing vehicle types topic.");
         _context = context;
     }
     public async Task<bool> HandleAsync(string jsonMessage)

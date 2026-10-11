@@ -1,0 +1,14 @@
+@model JsonElement
+@{ ViewData["Title"] = "Impact metrics"; }
+<h1>Impact metrics</h1><p>Tasks and forecast evaluations: last 7 days. Empty-station observations: last @Model.Text("historyMinutes") minutes.</p>
+<div class="metrics">
+<article class="metric"><span>Observed empty station-minutes</span><strong>@Model.Minutes("emptyMinutes")</strong><small>@Model.Text("stationsWithHistory") stations with history</small></article>
+<article class="metric"><span>Average task response</span><strong>@Model.Minutes("responseMinutes")</strong><small>@Model.Text("responseSamples") recorded starts</small></article>
+<article class="metric"><span>Recommendations completed</span><strong>@Model.Text("completionPercent")</strong><small>percent · @Model.Text("completed") / @Model.Text("taskCount") created tasks</small></article>
+<article class="metric"><span>30-minute forecast mean absolute error</span><strong>@Model.Text("forecastError")</strong><small>bikes · @Model.Text("forecastSamples") matched / @Model.Text("forecastsIssued") forecasts</small></article>
+</div>
+<div class="notice">A dash means there are no measured samples yet. Historical task start times are not invented. Lower forecast error is better; it is not an accuracy percentage.</div>
+<section class="panel padded"><h2>Availability after completed work</h2><p>Average change at the destination: <strong>@Model.Text("destinationChange") bikes</strong> across @Model.Text("changeSamples") measured tasks.</p><p>Compared with the reading at task start, using a source reading 15–20 minutes after completion. A change after a task is not proof the task caused it: riders and other activity also affect availability.</p></section>
+<section class="panel padded"><h2>Observed empty time by station</h2><p>Only consecutive zero readings within the freshness interval are counted. Missing intervals are excluded; these observations are not a guarantee of continuous emptiness.</p><table><thead><tr><th>Station</th><th>Observed empty minutes</th><th>Readings</th></tr></thead><tbody>
+@foreach(var station in Model.GetProperty("stations").EnumerateArray()) { <tr><td>@station.StationName()</td><td>@station.Minutes("emptyMinutes")</td><td>@station.Text("readings")</td></tr> }
+</tbody></table></section>

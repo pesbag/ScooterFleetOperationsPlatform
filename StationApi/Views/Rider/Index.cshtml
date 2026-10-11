@@ -1,0 +1,11 @@
+@model List<JsonElement>
+@{ ViewData["Title"] = "Find a bike"; }
+<header class="page-header"><div><h1>Find a bike</h1><p>Availability reported by the provider. No reservation is made here.</p></div></header>
+<form method="get" class="filters"><label>Station name <input name="search" value="@ViewBag.Search" /></label><label><input type="checkbox" name="favorites" value="true" checked="@ViewBag.Favorites" /> Favorites only</label><button class="button">Search</button></form>
+<section class="panel"><table><thead><tr><th>Station</th><th>Available bikes</th><th>Data</th><th>Actions</th></tr></thead><tbody>
+@foreach(var station in Model) {
+<tr><td><strong>@station.StationName()</strong><small class="muted">@station.Text("id")</small></td><td>@station.Text("count")<small>@(station.Text("renting") == "False" ? "Rentals closed" : station.Text("count") == "0" ? "Empty station" : station.Text("count") == "—" ? "Availability unknown" : "Available")</small></td><td>@station.Text("dataState")<small>Reported: @station.Time("reportedAt")</small><small>Received: @station.Time("receivedAt")</small></td><td>
+<form asp-action="Favorite" method="post"><input type="hidden" name="id" value="@station.Text("id")" /><input type="hidden" name="remove" value="@(station.Text("favorite") == "True" ? "true" : "false")" /><button class="button secondary">@(station.Text("favorite") == "True" ? "Remove favorite" : "Add favorite")</button></form>
+<a asp-action="Report" asp-route-id="@station.Text("id")">Report an issue</a></td></tr>
+}
+</tbody></table>@if(Model.Count == 0) { <p class="empty">No matching stations. Data may still be arriving.</p> }</section>

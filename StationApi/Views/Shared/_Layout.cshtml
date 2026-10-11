@@ -1,24 +1,41 @@
-@{ var current = ViewBag.CurrentUser is JsonElement element ? element : default; }
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var current = ViewBag.CurrentUser is JsonElement element ? element : default;
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    bool livePage = Context.Request.Method == "GET" && ((controller == "Workspace" && action is "Dashboard" or "Stations" or "Station" or "Metrics") || (controller == "Rider" && action == "Index"));
+    int refreshSeconds = int.TryParse(Configuration["Ui:RefreshSeconds"], out var seconds) ? Math.Clamp(seconds, 15, 600) : 60;
+    bool refresh = livePage && Context.Request.Query["refresh"] != "off";
+    var refreshValues = Context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
+    refreshValues["refresh"] = refresh ? "off" : "on";
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"] · Scooter Fleet</title>
+    @if (refresh) { <meta http-equiv="refresh" content="@refreshSeconds" /> }
+    <title>@ViewData["Title"] · Bike Fleet</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
 @if (current.ValueKind == JsonValueKind.Object)
 {
     <aside class="sidebar">
-        <a class="brand" asp-action="Dashboard" asp-controller="Workspace"><span class="brand-icon">S</span><span>SCOOTER<span class="brand-sub">FLEET OPERATIONS</span></span></a>
+        <a class="brand" asp-action="Dashboard" asp-controller="Workspace"><span class="brand-icon">B</span><span>BIKE<span class="brand-sub">FLEET OPERATIONS</span></span></a>
         <div class="nav-caption">WORKSPACE</div>
         <nav aria-label="Main navigation">
-            @foreach (var item in new[] { ("Dashboard", "Overview", "◫"), ("Stations", "Stations", "⊙"), ("Alerts", "Alerts", "!"), ("Recommendations", "Rebalancing", "⇄") })
+            @if (current.Text("role") == "RIDER") {
+                <a asp-controller="Rider" asp-action="Index">Find bikes</a>
+                <a asp-controller="Rider" asp-action="Index" asp-route-favorites="true">Favorites</a>
+                <a asp-controller="Rider" asp-action="Report">My reports</a>
+            } else {
+            @foreach (var item in new[] { ("Dashboard", "Overview", "◫"), ("Stations", "Stations", "⊙"), ("Alerts", "Alerts", "!"), ("Recommendations", "Rebalancing", "⇄"), ("Metrics", "Impact metrics", "▥"), ("Reports", "Rider reports", "!") })
             {
                 <a class="@(ViewContext.RouteData.Values["action"]?.ToString() == item.Item1 ? "selected" : "")" asp-controller="Workspace" asp-action="@item.Item1"><span>@item.Item3</span>@item.Item2</a>
             }
             @if (current.Text("role") == "ADMIN") { <a asp-controller="Workspace" asp-action="Users"><span>♙</span>Team management</a> }
+            }
         </nav>
         <div class="sidebar-note"><span class="live-dot"></span> Smarter moves.<br /><small>A balanced fleet starts here.</small></div>
         <a class="account" asp-controller="Workspace" asp-action="Profile"><span class="avatar">@current.Text("name").FirstOrDefault()</span><span>@current.Text("name")<small>@current.Text("role")</small></span></a>
@@ -27,7 +44,9 @@
 }
 <main class="@(current.ValueKind == JsonValueKind.Object ? "workspace" : "public")">
     @if (TempData["Success"] is string message) { <div class="notice success" role="status">@message</div> }
+    @if (livePage) { <p class="muted">@(refresh ? $"Automatic refresh every {refreshSeconds} seconds." : "Automatic refresh paused.") <a asp-all-route-data="refreshValues">@(refresh ? "Pause while searching" : "Resume updates")</a> Source collection and display may be delayed; check each station's report time.</p> }
     @RenderBody()
+    <footer class="muted">Data source: <a href="@Configuration["DataSource:AttributionUrl"]">@Configuration["DataSource:Name"]</a>. Public bike availability; recorded tasks do not control the provider's vehicles.</footer>
 </main>
 </body>
 </html>

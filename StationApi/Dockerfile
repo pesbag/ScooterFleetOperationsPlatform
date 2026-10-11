@@ -1,5 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
+COPY Shared/ Shared/
 COPY StationApi/StationApi.csproj StationApi/
 RUN dotnet restore StationApi/StationApi.csproj
 COPY StationApi/ StationApi/

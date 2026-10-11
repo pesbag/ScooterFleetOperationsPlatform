@@ -16,6 +16,7 @@ public class FleetUser
 
 public class FleetAlert
 {
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped] public string? StationName { get; set; }
     public long Id { get; set; }
     [MaxLength(255)] public string StationId { get; set; } = "";
     public string Severity { get; set; } = "WARNING";
@@ -29,6 +30,8 @@ public class FleetAlert
 
 public class Recommendation
 {
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped] public string? SourceStationName { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped] public string? DestinationStationName { get; set; }
     public long Id { get; set; }
     [MaxLength(255)] public string SourceStationId { get; set; } = "";
     [MaxLength(255)] public string DestinationStationId { get; set; } = "";
@@ -39,4 +42,41 @@ public class Recommendation
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public int? UpdatedBy { get; set; }
+}
+
+public class RiderFavorite
+{
+    public int UserId { get; set; }
+    [MaxLength(255)] public string StationId { get; set; } = "";
+}
+public class RiderIssue
+{
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped] public string? StationName { get; set; }
+    public long Id { get; set; }
+    public int UserId { get; set; }
+    [MaxLength(255)] public string StationId { get; set; } = "";
+    [MaxLength(1000)] public string Description { get; set; } = "";
+    [MaxLength(16)] public string Status { get; set; } = "OPEN";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ResolvedAt { get; set; }
+    public int? ResolvedBy { get; set; }
+}
+public class TaskMeasurement
+{
+    public long RecommendationId { get; set; }
+    public DateTime? StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public int? DestinationBefore { get; set; }
+    public int? DestinationAfter { get; set; }
+    public DateTime? ObservedAt { get; set; }
+}
+public class ForecastSample
+{
+    public long Id { get; set; }
+    [MaxLength(255)] public string StationId { get; set; } = "";
+    public DateTime IssuedAt { get; set; }
+    public DateTime DueAt { get; set; }
+    public double PredictedCount { get; set; }
+    public int? ActualCount { get; set; }
+    public DateTime? ObservedAt { get; set; }
 }

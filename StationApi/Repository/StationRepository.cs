@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using StationApi.DataDbContext;
@@ -11,17 +11,19 @@ public class StationRepository: IStationRepository
 {
     private readonly IMongoCollection<BsonDocument> _collection;
     private readonly StationDbContext _sqlContext;
+    private readonly string _prefix;
     public  StationRepository(IMongoDatabase collection,
-        StationDbContext sqlContext)
+        StationDbContext sqlContext, IConfiguration config)
     {
         _collection = collection.GetCollection<BsonDocument>("StationsStatus"); ;
         _sqlContext=sqlContext;
+        _prefix = config["DataSource:StationPrefix"]!;
     }
     public async Task<IEnumerable<GetFiletrDto>> GetStationAsync(
     int? minAvailableBikes, int? isRenting, int? isReturning)
     {
         var filterBuilder = Builders<BsonDocument>.Filter;
-        var filter = filterBuilder.Empty;
+        var filter = filterBuilder.Regex("Station_id", new BsonRegularExpression("^" + System.Text.RegularExpressions.Regex.Escape(_prefix)));
         if (minAvailableBikes.HasValue)
         {
             filter &= filterBuilder.Gte("Num_bikes_available", minAvailableBikes.Value);
@@ -71,11 +73,11 @@ public class StationRepository: IStationRepository
                 Lon = sqlInfo?.Lon ?? 0,
                 Capacity = sqlInfo?.Capacity ?? 0,
 
-                Num_bikes_available = doc.GetValue("Num_bikes_available", doc.GetValue("num_bikes_available", 0)).ToInt32(),
-                //Nun_vehicles_available = doc.GetValue("Nun_vehicles_available", doc.GetValue("num_vehicles_available", 0)).ToInt32(),
-                Num_docs_available = doc.GetValue("Num_docs_available", doc.GetValue("num_docks_available", 0)).ToInt32(),
-                Is_renting = doc.GetValue("Is_renting", doc.GetValue("is_renting", 0)).ToInt32(),
-                Is_returning = doc.GetValue("Is_returning", doc.GetValue("is_returning", 0)).ToInt32(),
+                Num_bikes_available = Number(doc, "Num_bikes_available", "num_bikes_available"),
+                //Nun_vehicles_available = Number(doc, "Nun_vehicles_available", "num_vehicles_available"),
+                Num_docs_available = Number(doc, "Num_docs_available", "num_docks_available"),
+                Is_renting = Number(doc, "Is_renting", "is_renting"),
+                Is_returning = Number(doc, "Is_returning", "is_returning"),
                 //Last_reported = doc.GetValue("Last_reported", doc.GetValue("last_reported", 0L)).ToInt64()
             });
         }
@@ -84,6 +86,7 @@ public class StationRepository: IStationRepository
     }
     public async Task<AllDataDto?> GetAllDataByIdASync(string id)
     {
+        if (!id.StartsWith(_prefix, StringComparison.Ordinal)) return null;
         var sqlResult = await _sqlContext
             .stationInformation
             .AsNoTracking()
@@ -104,12 +107,24 @@ public class StationRepository: IStationRepository
             Lon = sqlResult.Lon,
             Capacity = sqlResult.Capacity,
 
-            Num_bikes_available = mongoDoc.GetValue("Num_bikes_available", mongoDoc.GetValue("num_bikes_available", 0)).ToInt32(),
-            Nun_vehicles_available = mongoDoc.GetValue("Nun_vehicles_available", mongoDoc.GetValue("num_vehicles_available", 0)).ToInt32(),
-            Num_docs_available = mongoDoc.GetValue("Num_docs_available", mongoDoc.GetValue("num_docks_available", 0)).ToInt32(),
-            Is_renting = mongoDoc.GetValue("Is_renting", mongoDoc.GetValue("is_renting", 0)).ToInt32(),
-            Is_returning = mongoDoc.GetValue("Is_returning", mongoDoc.GetValue("is_returning", 0)).ToInt32(),
-            Last_reported = mongoDoc.GetValue("Last_reported", mongoDoc.GetValue("last_reported", 0L)).ToInt64()
+            Num_bikes_available = Number(mongoDoc, "Num_bikes_available", "num_bikes_available"),
+            Nun_vehicles_available = Number(mongoDoc, "Nun_vehicles_available", "num_vehicles_available"),
+            Num_docs_available = Number(mongoDoc, "Num_docs_available", "num_docks_available"),
+            Is_renting = Number(mongoDoc, "Is_renting", "is_renting"),
+            Is_returning = Number(mongoDoc, "Is_returning", "is_returning"),
+            Last_reported = Timestamp(mongoDoc)
         };
+    }
+    private static int? Number(BsonDocument doc, string key, string fallback)
+    {
+        var value = doc.GetValue(key, doc.GetValue(fallback, BsonNull.Value));
+        if (value.IsBoolean) return value.AsBoolean ? 1 : 0;
+        return (value.IsInt32 || value.IsInt64) && value.ToInt64() is >= int.MinValue and <= int.MaxValue
+            ? value.ToInt32() : null;
+    }
+    private static long? Timestamp(BsonDocument doc)
+    {
+        var value = doc.GetValue("Last_reported", doc.GetValue("last_reported", BsonNull.Value));
+        return value.IsInt64 || value.IsInt32 ? value.ToInt64() : null;
     }
 }

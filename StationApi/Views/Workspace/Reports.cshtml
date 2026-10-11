@@ -1,0 +1,6 @@
+@model JsonElement
+@{ ViewData["Title"] = "Rider reports"; }
+<h1>Rider reports</h1>
+@foreach(var issue in Model.EnumerateArray()) { <article class="alert-card"><strong>@issue.StationName("stationName", "stationId") · @issue.Text("status")</strong><small class="muted">@issue.Text("stationId")</small><p>@issue.Text("description")</p><small>@issue.Time("createdAt")</small>
+@if(issue.Text("status") != "RESOLVED") { <form asp-action="ResolveReport" method="post"><input type="hidden" name="id" value="@issue.Text("id")" /><button class="button secondary">Mark resolved</button></form> }</article> }
+@if(Model.GetArrayLength() == 0) { <p>No reports yet.</p> }

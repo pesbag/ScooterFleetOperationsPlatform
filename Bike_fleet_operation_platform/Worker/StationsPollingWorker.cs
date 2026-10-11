@@ -1,4 +1,4 @@
-﻿using Bike_fleet_operation_platform.Services;
+using Bike_fleet_operation_platform.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -44,19 +44,19 @@ public class StationsPollingWorker : BackgroundService
         var vehicleTask = RunPeriodicJobAsync(
             jobName: "VehicleTypes",
             interval: TimeSpan.FromSeconds(vehicleSeconds),
-            action: () => _vehicleTypesService.GetVehicleTypesDtoAsync(vehicleTopic),
+            action: () => _vehicleTypesService.GetVehicleTypesDtoAsync(vehicleTopic, stoppingToken),
             stoppingToken);
 
         var infoTask = RunPeriodicJobAsync(
             jobName: "StationInformation",
             interval: TimeSpan.FromSeconds(infoSeconds),
-            action: () => _infoService.GetStationsInformationAsync(infoTopic),
+            action: () => _infoService.GetStationsInformationAsync(infoTopic, stoppingToken),
             stoppingToken);
 
         var statusTask = RunPeriodicJobAsync(
             jobName: "StationStatus",
             interval: TimeSpan.FromSeconds(statusSeconds),
-            action: () => _statusService.GetStationsStatusAsync(statusTopic),
+            action: () => _statusService.GetStationsStatusAsync(statusTopic, stoppingToken),
             stoppingToken);
 
         await Task.WhenAll(infoTask, statusTask, vehicleTask);
@@ -93,6 +93,7 @@ public class StationsPollingWorker : BackgroundService
             _logger.LogDebug("Executing {JobName}...", jobName);
             await action();
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error while running job {JobName}", jobName);

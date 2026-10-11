@@ -1,5 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
+COPY Shared/ Shared/
 COPY ProcessingService/ProcessingService.csproj ProcessingService/
 RUN dotnet restore ProcessingService/ProcessingService.csproj
 COPY ProcessingService/ ProcessingService/

@@ -8,7 +8,7 @@ namespace StationApi.Services;
 public sealed class OperationsGate { public SemaphoreSlim Semaphore { get; } = new(1, 1); }
 
 public class OperationsService(OperationsDbContext db, FleetDataService data, SmartFleetEngine engine,
-    FleetOptions options, OperationsGate gate)
+    FleetOptions options, OperationsGate gate, MetricsService metrics)
 {
     public async Task Refresh(CancellationToken token)
     {
@@ -17,6 +17,7 @@ public class OperationsService(OperationsDbContext db, FleetDataService data, Sm
         {
             var stations = await data.GetStations(token);
             var now = DateTime.UtcNow;
+            var currentIds = stations.Select(x => x.Station.Id).ToList();
             var alerts = await db.Alerts.Where(x => x.Status == "ACTIVE").ToListAsync(token);
             var recentlyResolved = await db.Alerts.Where(x => x.ResolvedAt > now.AddMinutes(-options.RecommendationCooldownMinutes))
                 .Select(x => x.StationId).ToListAsync(token);
@@ -38,12 +39,12 @@ public class OperationsService(OperationsDbContext db, FleetDataService data, Sm
                 active.Title = station.Stale ? "Station data needs attention" : $"{station.Station.Name}: availability risk";
                 active.Description = station.Explanation;
             }
-            var pending = await db.Recommendations.Where(x => x.Status == "PENDING" || x.Status == "IN_PROGRESS").ToListAsync(token);
+            var pending = await db.Recommendations.Where(x => (x.Status == "PENDING" || x.Status == "IN_PROGRESS") && currentIds.Contains(x.SourceStationId) && currentIds.Contains(x.DestinationStationId)).ToListAsync(token);
             var byId = stations.ToDictionary(x => x.Station.Id);
             foreach (var item in pending.Where(x => x.Status == "PENDING"))
             {
                 if (!byId.TryGetValue(item.SourceStationId, out var source) || !byId.TryGetValue(item.DestinationStationId, out var target)
-                    || source.Stale || target.Stale || !source.Station.Renting || !target.Station.Returning
+                    || source.Stale || target.Stale || source.Station.Renting != true || target.Station.Returning != true
                     || source.Station.Count < item.Quantity || target.Station.AvailableDocks < item.Quantity
                     || target.Station.Capacity - target.Station.Count < item.Quantity)
                 {
@@ -58,6 +59,7 @@ public class OperationsService(OperationsDbContext db, FleetDataService data, Sm
                 db.Recommendations.Add(new Recommendation { SourceStationId = move.SourceStationId,
                     DestinationStationId = move.DestinationStationId, Quantity = move.Quantity, Priority = move.Priority, Reason = move.Reason });
             await db.SaveChangesAsync(token);
+            await metrics.Observe(stations, token);
         }
         finally { gate.Semaphore.Release(); }
     }
