@@ -55,24 +55,22 @@ public class SmartFleetEngine(FleetOptions options)
             && x.At <= now && x.Count >= 0 && (station.Capacity == 0 || x.Count <= station.Capacity))
             .GroupBy(x => x.At).Select(x => x.Last()).OrderBy(x => x.At).ToList();
         double? rate = null;
-        if (!stale && history.Count >= 2)
+        if (history.Count >= 2)
         {
             double hours = (history[^1].At - history[0].At).TotalHours;
             if (hours >= 5d / 60 && history[^1].At >= now.AddMinutes(-options.StaleMinutes))
                 rate = (history[^1].Count - history[0].Count) / hours;
         }
-        double? shortage = !stale && station.Count == 0 ? 0 : rate < -.01 ? station.Count / -rate * 60 : null;
-        double? full = station.Capacity == 0 ? null : !stale && station.Count == station.Capacity ? 0 : rate > .01 ? (station.Capacity - station.Count) / rate * 60 : null;
+        double? shortage = station.Count == 0 ? 0 : rate < -.01 ? station.Count / -rate * 60 : null;
+        double? full = station.Capacity == 0 ? null : station.Count == station.Capacity ? 0 : rate > .01 ? (station.Capacity - station.Count) / rate * 60 : null;
         int score = station.Count == 0 ? 85 : ratio <= .1 || ratio >= .9 ? 85 : ratio < options.LowRatio || ratio > options.HighRatio ? 55 : 15;
         double? earliest = shortage ?? full;
         if (earliest <= options.CriticalMinutes) score = Math.Max(score, 95);
         else if (earliest <= options.WarningMinutes) score = Math.Max(score, 75);
         if (station.Renting != true || station.Returning != true) score = Math.Max(score, 70);
-        if (stale) score = Math.Max(score, 70);
         string status = score >= 85 ? "CRITICAL" : score >= 40 ? "WARNING" : "HEALTHY";
         string level = score >= 85 ? "CRITICAL" : score >= 70 ? "HIGH" : score >= 40 ? "MEDIUM" : "LOW";
-        string explanation = stale ? "Data is missing or outdated. Verify the station before moving bikes."
-            : shortage is not null ? $"Expected to run out in approximately {DurationText.Format(shortage.Value)} at the recent net rate."
+        string explanation = shortage is not null ? $"Expected to run out in approximately {DurationText.Format(shortage.Value)} at the recent net rate."
             : full is not null ? $"Expected to reach capacity in approximately {DurationText.Format(full.Value)} at the recent net rate."
             : rate is null ? "Not enough recent history for a prediction; risk uses current availability."
             : "Availability is stable over the recent observation window.";

@@ -1,5 +1,5 @@
 using System.Net;
-using Bike_fleet_operation_platform.Services;
+using BikeFleetOperationPlatform.Services;
 public static class HttpChecks
 {
     public static async Task Run()

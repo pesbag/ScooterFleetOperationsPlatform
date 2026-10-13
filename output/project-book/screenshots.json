@@ -1,0 +1,142 @@
+[
+  {
+    "name": "01-login",
+    "url": "/Workspace/Login",
+    "status": 200,
+    "title": "Sign in · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\01-login.png"
+  },
+  {
+    "name": "02-register",
+    "url": "/Workspace/Register",
+    "status": 200,
+    "title": "Rider registration · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\02-register.png"
+  },
+  {
+    "name": "03-overview",
+    "url": "/",
+    "status": 200,
+    "title": "Overview · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\03-overview.png"
+  },
+  {
+    "name": "04-stations",
+    "url": "/Workspace/Stations",
+    "status": 200,
+    "title": "Stations · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\04-stations.png"
+  },
+  {
+    "name": "05-station",
+    "url": "/Workspace/Station?id=citibike%3A0e5be726-2452-42a0-9be8-ea85c8408e4c",
+    "status": 200,
+    "title": "31 Ave & 34 St · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\05-station.png"
+  },
+  {
+    "name": "06-alerts",
+    "url": "/Workspace/Alerts",
+    "status": 200,
+    "title": "Alerts · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\06-alerts.png"
+  },
+  {
+    "name": "07-rebalancing",
+    "url": "/Workspace/Recommendations",
+    "status": 200,
+    "title": "Rebalancing · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\07-rebalancing.png"
+  },
+  {
+    "name": "08-metrics",
+    "url": "/Workspace/Metrics",
+    "status": 200,
+    "title": "Impact metrics · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\08-metrics.png"
+  },
+  {
+    "name": "09-reports",
+    "url": "/Workspace/Reports",
+    "status": 200,
+    "title": "Rider reports · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\09-reports.png"
+  },
+  {
+    "name": "10-users",
+    "url": "/Workspace/Users",
+    "status": 200,
+    "title": "Team management · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\10-users.png"
+  },
+  {
+    "name": "11-add-user",
+    "url": "/Workspace/EditUser",
+    "status": 200,
+    "title": "Add user · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\11-add-user.png"
+  },
+  {
+    "name": "12-profile",
+    "url": "/Workspace/Profile",
+    "status": 200,
+    "title": "My profile · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\12-profile.png"
+  },
+  {
+    "name": "13-error",
+    "url": "/Workspace/Station?id=book-nonexistent",
+    "status": 404,
+    "title": "Request unsuccessful · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\13-error.png"
+  },
+  {
+    "name": "14-edit-user",
+    "url": "/Workspace/EditUser?id=1",
+    "status": 200,
+    "title": "Edit user · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\14-edit-user.png"
+  },
+  {
+    "name": "15-confirm",
+    "url": "/Workspace/Confirm?kind=recommendation&id=303&status=COMPLETED",
+    "status": 200,
+    "title": "Confirm action · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\15-confirm.png"
+  },
+  {
+    "name": "16-rider",
+    "url": "/Rider/Index",
+    "status": 200,
+    "title": "Find a bike · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\16-rider.png"
+  },
+  {
+    "name": "17-favorites",
+    "url": "/Rider/Index?favorites=true",
+    "status": 200,
+    "title": "Find a bike · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\17-favorites.png"
+  },
+  {
+    "name": "18-report",
+    "url": "/Rider/Report?id=citibike%3A0e5be726-2452-42a0-9be8-ea85c8408e4c",
+    "status": 200,
+    "title": "Issue reports · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\18-report.png"
+  },
+  {
+    "name": "19-rider-profile",
+    "url": "/Workspace/Profile",
+    "status": 200,
+    "title": "My profile · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\19-rider-profile.png"
+  },
+  {
+    "name": "20-operator",
+    "url": "/",
+    "status": 200,
+    "title": "Overview · Bike Fleet",
+    "file": "C:\\Users\\אשר ויהודית פירוב\\Desktop\\MahatFinalProject\\Bike_fleet_operation_platform\\output\\project-book\\screenshots\\20-operator.png"
+  }
+]

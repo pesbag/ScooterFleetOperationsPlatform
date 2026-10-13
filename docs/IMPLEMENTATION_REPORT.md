@@ -11,7 +11,7 @@
 | קבצים | תפקיד השינוי |
 | --- | --- |
 | `BikeFleet.sln`, `BikeFleet.slnx`, `BikeFleet.code-workspace`, `.vscode/tasks.json` | שמות ופתיחה ב־VS Code |
-| `Bike_fleet_operation_platform/Services/GbfsHttp.cs` ושירותי הקליטה | קריאת GBFS, ביטול, timeout וניסיונות חוזרים מוגבלים |
+| `BikeFleetOperationPlatform/Services/GbfsHttp.cs` ושירותי הקליטה | קריאת GBFS, ביטול, timeout וניסיונות חוזרים מוגבלים |
 | `appsettings.json` בשירותים, `.env.example`, `docker-compose.yml` | מקור האופניים, תחילית מזהים ורענון ניתנים להגדרה |
 | `Shared/FleetCacheContract.cs`, `FleetDataService.cs`, `FleetCacheState.cs` | TTL של 60 שניות, fallback, גרסת מטמון ושאילתת תחנה ממוקדת |
 | `ProcessingService/Handler/StationInformationHandler.cs`, `Service/MongoConsumerService.cs` | פסילת מטמון לאחר שמירת נתוני מקור |

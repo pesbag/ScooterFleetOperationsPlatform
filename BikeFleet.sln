@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bike_fleet_operation_platform", "Bike_fleet_operation_platform\Bike_fleet_operation_platform.csproj", "{E4EBD2E7-A4AB-47E8-B5B4-DE918F3F06C3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BikeFleetOperationPlatform", "BikeFleetOperationPlatform\BikeFleetOperationPlatform.csproj", "{E4EBD2E7-A4AB-47E8-B5B4-DE918F3F06C3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcessingService", "ProcessingService\ProcessingService.csproj", "{F98F8810-ACEF-4410-812F-60942E0FF608}"
 EndProject

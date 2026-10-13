@@ -2,10 +2,12 @@
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
   <ItemGroup><ProjectReference Include="../StationApi/StationApi.csproj" /><FrameworkReference Include="Microsoft.AspNetCore.App" /></ItemGroup>
   <ItemGroup>
-    <Compile Include="../Bike_fleet_operation_platform/Dtos/StationStatusDto.cs" Link="IngestionStationStatusDto.cs" />
-    <Compile Include="../Bike_fleet_operation_platform/Services/GbfsHttp.cs" Link="GbfsHttp.cs" />
-    <Compile Include="../Bike_fleet_operation_platform/Services/GbfsFlagConverter.cs" Link="GbfsFlagConverter.cs" />
-    <Compile Include="../Bike_fleet_operation_platform/Dtos/StationInformationDto.cs" Link="StationInformationDto.cs" />
+    <PackageReference Include="Confluent.Kafka" Version="2.15.1" />
+    <Compile Include="../BikeFleetOperationPlatform/Services/KafkaProducerService.cs" Link="KafkaProducerService.cs" />
+    <Compile Include="../BikeFleetOperationPlatform/Dtos/StationStatusDto.cs" Link="IngestionStationStatusDto.cs" />
+    <Compile Include="../BikeFleetOperationPlatform/Services/GbfsHttp.cs" Link="GbfsHttp.cs" />
+    <Compile Include="../BikeFleetOperationPlatform/Services/GbfsFlagConverter.cs" Link="GbfsFlagConverter.cs" />
+    <Compile Include="../BikeFleetOperationPlatform/Dtos/StationInformationDto.cs" Link="StationInformationDto.cs" />
     <Compile Include="../ProcessingService/Dtos/StationStatusDto.cs" Link="ProcessingStationStatusDto.cs" />
   </ItemGroup>
 </Project>

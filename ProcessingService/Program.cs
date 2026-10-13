@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +30,6 @@ builder.Services.AddSingleton<IDatabase>(sp =>
 builder.Services.AddDbContext<StationDbContext>(options =>
     options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36))));
 
-//builder.Services.AddScoped<StationInformationHandler>();
 
 builder.Services.AddHostedService<KafkaConsumerBackgroundService>();
 builder.Services.AddScoped<IKafkaMessageHandler, StationInformationHandler>();

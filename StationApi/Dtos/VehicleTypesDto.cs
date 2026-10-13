@@ -1,17 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace StationApi.Dtos;
 
 public class VehicleTypesDto
 {
     [Required]
-    public string Vehicle_type_id { get; set; } = string.Empty;
-    public string Form_factor { get; set; } = string.Empty;
-    public string propulsion_type { get; set; } = string.Empty;
+    [System.Text.Json.Serialization.JsonPropertyName("vehicle_type_id")]
+    [System.ComponentModel.DataAnnotations.Schema.Column("Vehicle_type_id")]
+    public string VehicleTypeId { get; set; } = string.Empty;
+    [System.Text.Json.Serialization.JsonPropertyName("form_factor")]
+    [System.ComponentModel.DataAnnotations.Schema.Column("Form_factor")]
+    public string FormFactor { get; set; } = string.Empty;
+    [System.Text.Json.Serialization.JsonPropertyName("propulsion_type")]
+    [System.ComponentModel.DataAnnotations.Schema.Column("propulsion_type")]
+    public string PropulsionType { get; set; } = string.Empty;
 }

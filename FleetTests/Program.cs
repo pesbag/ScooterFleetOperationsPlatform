@@ -65,31 +65,31 @@ Check("Future source clock is invalid", future.DataState == "INVALID" && future.
 Check("Fresh zero remains a real empty station", engine.Analyze(Station("real-empty", 0, 0), now) is { DataState: "CURRENT", ShortageMinutes: 0 });
 Check("Excessive return capacity is invalid", engine.Analyze(Station("bad-docks", 4, 10) with { AvailableDocks = 99 }, now).DataState == "INVALID");
 var jsonOptions = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-var absentDto = System.Text.Json.JsonSerializer.Deserialize<Bike_fleet_operation_platform.Dtos.StationStatusDto>("{\"station_id\":\"missing\"}", jsonOptions)!;
-Check("Ingestion preserves absent fields as null", absentDto.Num_bikes_available is null && absentDto.Num_docs_available is null && absentDto.Is_renting is null);
-var explicitNullDto = System.Text.Json.JsonSerializer.Deserialize<Bike_fleet_operation_platform.Dtos.StationStatusDto>("{\"station_id\":\"null\",\"num_bikes_available\":null,\"last_reported\":null}", jsonOptions)!;
-Check("Explicit null source timestamp remains missing", explicitNullDto.Num_bikes_available is null && explicitNullDto.Last_reported is null);
-var zeroDto = System.Text.Json.JsonSerializer.Deserialize<Bike_fleet_operation_platform.Dtos.StationStatusDto>("{\"station_id\":\"zero\",\"num_bikes_available\":0,\"num_docks_available\":0}", jsonOptions)!;
-Check("Ingestion preserves explicit zero", zeroDto.Num_bikes_available == 0 && zeroDto.Num_docs_available == 0);
+var absentDto = System.Text.Json.JsonSerializer.Deserialize<BikeFleetOperationPlatform.Dtos.StationStatusDto>("{\"station_id\":\"missing\"}", jsonOptions)!;
+Check("Ingestion preserves absent fields as null", absentDto.NumBikesAvailable is null && absentDto.NumDocksAvailable is null && absentDto.IsRenting is null);
+var explicitNullDto = System.Text.Json.JsonSerializer.Deserialize<BikeFleetOperationPlatform.Dtos.StationStatusDto>("{\"station_id\":\"null\",\"num_bikes_available\":null,\"last_reported\":null}", jsonOptions)!;
+Check("Explicit null source timestamp remains missing", explicitNullDto.NumBikesAvailable is null && explicitNullDto.LastReported is null);
+var zeroDto = System.Text.Json.JsonSerializer.Deserialize<BikeFleetOperationPlatform.Dtos.StationStatusDto>("{\"station_id\":\"zero\",\"num_bikes_available\":0,\"num_docks_available\":0}", jsonOptions)!;
+Check("Ingestion preserves explicit zero", zeroDto.NumBikesAvailable == 0 && zeroDto.NumDocksAvailable == 0);
 absentDto.ReceivedAt = now;
 var processedDto = System.Text.Json.JsonSerializer.Deserialize<ProcessingService.Dtos.StationStatusDto>(System.Text.Json.JsonSerializer.Serialize(absentDto), jsonOptions)!;
-Check("Kafka JSON round trip retains missing count and receipt time", processedDto.Num_bikes_available is null && processedDto.ReceivedAt == now);
-var flags = System.Text.Json.JsonSerializer.Deserialize<Bike_fleet_operation_platform.Dtos.StationStatusDto>("{\"is_renting\":true,\"is_returning\":false}", jsonOptions)!;
-Check("GBFS boolean flags convert to existing Kafka integers", flags.Is_renting == 1 && flags.Is_returning == 0);
+Check("Kafka JSON round trip retains missing count and receipt time", processedDto.NumBikesAvailable is null && processedDto.ReceivedAt == now);
+var flags = System.Text.Json.JsonSerializer.Deserialize<BikeFleetOperationPlatform.Dtos.StationStatusDto>("{\"is_renting\":true,\"is_returning\":false}", jsonOptions)!;
+Check("GBFS boolean flags convert to existing Kafka integers", flags.IsRenting == 1 && flags.IsReturning == 0);
 if (args.Contains("--gbfs"))
 {
     using var http = new HttpClient { BaseAddress = new Uri("https://gbfs.lyft.com/gbfs/2.3/bkn/en/"), Timeout = TimeSpan.FromSeconds(25) };
-    using var infoFeed = await Bike_fleet_operation_platform.Services.GbfsHttp.GetJsonAsync(http, "station_information.json", 3, default);
-    using var statusFeed = await Bike_fleet_operation_platform.Services.GbfsHttp.GetJsonAsync(http, "station_status.json", 3, default);
+    using var infoFeed = await BikeFleetOperationPlatform.Services.GbfsHttp.GetJsonAsync(http, "station_information.json", 3, default);
+    using var statusFeed = await BikeFleetOperationPlatform.Services.GbfsHttp.GetJsonAsync(http, "station_status.json", 3, default);
     var info = infoFeed.RootElement.GetProperty("data").GetProperty("stations").EnumerateArray()
-        .Select(x => System.Text.Json.JsonSerializer.Deserialize<Bike_fleet_operation_platform.Dtos.StationInformationDto>(x, jsonOptions)!).ToDictionary(x => x.Station_id);
+        .Select(x => System.Text.Json.JsonSerializer.Deserialize<BikeFleetOperationPlatform.Dtos.StationInformationDto>(x, jsonOptions)!).ToDictionary(x => x.StationId);
     var status = statusFeed.RootElement.GetProperty("data").GetProperty("stations").EnumerateArray()
-        .Select(x => System.Text.Json.JsonSerializer.Deserialize<Bike_fleet_operation_platform.Dtos.StationStatusDto>(x, jsonOptions)!).ToList();
+        .Select(x => System.Text.Json.JsonSerializer.Deserialize<BikeFleetOperationPlatform.Dtos.StationStatusDto>(x, jsonOptions)!).ToList();
     Check("Live GBFS source contains station metadata and status", info.Count > 0 && status.Count > 0);
-    var analyses = status.Where(x => info.ContainsKey(x.Station_id)).Select(x => engine.Analyze(new StationInput(x.Station_id,
-        info[x.Station_id].Name, info[x.Station_id].Capacity, x.Num_bikes_available, x.Num_docs_available,
-        x.Last_reported is > 0 ? DateTimeOffset.FromUnixTimeSeconds(x.Last_reported.Value).UtcDateTime : null,
-        x.Is_renting == 1, x.Is_returning == 1, 0, 0, []), DateTime.UtcNow)).ToList();
+    var analyses = status.Where(x => info.ContainsKey(x.StationId)).Select(x => engine.Analyze(new StationInput(x.StationId,
+        info[x.StationId].Name, info[x.StationId].Capacity, x.NumBikesAvailable, x.NumDocksAvailable,
+        x.LastReported is > 0 ? DateTimeOffset.FromUnixTimeSeconds(x.LastReported.Value).UtcDateTime : null,
+        x.IsRenting == 1, x.IsReturning == 1, 0, 0, []), DateTime.UtcNow)).ToList();
     Check("Live bike feed has current healthy stations with real capacity", analyses.Any(x => !x.Stale && x.Status == "HEALTHY" && x.Station.Capacity > 0));
     Console.WriteLine($"Read-only Citi Bike check: {info.Count} stations; {analyses.Count(x => !x.Stale)} current, {analyses.Count(x => x.Status == "HEALTHY")} healthy, {analyses.Count(x => x.Status == "CRITICAL")} critical. No Kafka or database writes.");
 }
@@ -124,3 +124,4 @@ Console.WriteLine($"{passed} business checks passed.");
 await CacheChecks.Run();
 await HttpChecks.Run();
 await WebChecks.Run(args.Contains("--serve"));
+await KafkaChecks.Run();

@@ -1,8 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 
 namespace StationApi.Dtos;
@@ -10,7 +5,9 @@ namespace StationApi.Dtos;
 public class StationInformationDto
 {
     [Required]
-    public string Station_id { get; set; } = string.Empty;
+    [System.Text.Json.Serialization.JsonPropertyName("station_id")]
+    [System.ComponentModel.DataAnnotations.Schema.Column("Station_id")]
+    public string StationId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     [Range(-90, 90)]
     public double Lat { get; set; }

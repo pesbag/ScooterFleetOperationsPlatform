@@ -14,7 +14,7 @@ public class StationController : ControllerBase
         _repo = repo;
     }
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<GetFiletrDto>>> GetAllFilteredAsync([FromQuery] int? minAvailableBike, [FromQuery] int? inRenting, [FromQuery] int? isReturning)
+    public async Task<ActionResult<IEnumerable<GetFilterDto>>> GetAllFilteredAsync([FromQuery] int? minAvailableBike, [FromQuery] int? inRenting, [FromQuery] int? isReturning)
     {
         var result = await _repo.GetStationAsync(minAvailableBike, inRenting, isReturning);
         return Ok(result);

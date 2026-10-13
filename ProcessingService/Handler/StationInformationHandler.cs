@@ -1,9 +1,7 @@
 using ProcessingService.DataDbContext;
 using ProcessingService.Dtos;
 using StackExchange.Redis;
-using System;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace ProcessingService.Handler;
 
@@ -29,9 +27,9 @@ public class StationInformationHandler : IKafkaMessageHandler
         var dto = JsonSerializer.Deserialize<StationInformationDto>(jsonMessage, options);
         if (dto is null) return false;
 
-        var existing = await _context.stationInformation.FindAsync(dto.Station_id);
+        var existing = await _context.StationInformation.FindAsync(dto.StationId);
         if (existing is null)
-            await _context.stationInformation.AddAsync(dto);
+            await _context.StationInformation.AddAsync(dto);
         else
             _context.Entry(existing).CurrentValues.SetValues(dto);
 

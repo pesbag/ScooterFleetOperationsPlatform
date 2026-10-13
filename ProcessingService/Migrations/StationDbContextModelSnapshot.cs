@@ -20,7 +20,8 @@ namespace ProcessingService.Migrations
 
             modelBuilder.Entity("ProcessingService.Dtos.StationInformationDto", b =>
                 {
-                    b.Property<string>("Station_id")
+                    b.Property<string>("StationId")
+                        .HasColumnName("Station_id")
                         .HasColumnType("varchar(255)");
 
                     b.Property<int>("Capacity")
@@ -36,25 +37,28 @@ namespace ProcessingService.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.HasKey("Station_id");
+                    b.HasKey("StationId");
 
                     b.ToTable("stationInformation");
                 });
 
             modelBuilder.Entity("ProcessingService.Dtos.VehicleTypesDto", b =>
                 {
-                    b.Property<string>("Vehicle_type_id")
+                    b.Property<string>("VehicleTypeId")
+                        .HasColumnName("Vehicle_type_id")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("Form_factor")
+                    b.Property<string>("FormFactor")
+                        .HasColumnName("Form_factor")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("propulsion_type")
+                    b.Property<string>("PropulsionType")
+                        .HasColumnName("propulsion_type")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.HasKey("Vehicle_type_id");
+                    b.HasKey("VehicleTypeId");
 
                     b.ToTable("vehicleTypes");
                 });

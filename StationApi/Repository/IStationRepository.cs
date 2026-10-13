@@ -4,7 +4,7 @@ namespace StationApi.Repository;
 
 public interface IStationRepository
 {
-    Task<IEnumerable<GetFiletrDto>> GetStationAsync(
+    Task<IEnumerable<GetFilterDto>> GetStationAsync(
         int? minAvailableBikes, int? isRenting, int? isReturning);
 
     Task<AllDataDto?> GetAllDataByIdAsync(string id);

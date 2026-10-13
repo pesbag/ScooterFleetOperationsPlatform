@@ -81,7 +81,7 @@ services:
   ingestion:
     build:
       context: .
-      dockerfile: Bike_fleet_operation_platform/Dockerfile
+      dockerfile: BikeFleetOperationPlatform/Dockerfile
     environment:
       Kafka__BootstrapServices: broker:29092
       DataSource__StationPrefix: ${GBFS_STATION_PREFIX:-citibike:}

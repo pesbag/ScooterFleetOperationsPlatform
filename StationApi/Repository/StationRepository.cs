@@ -3,8 +3,6 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using StationApi.DataDbContext;
 using StationApi.Dtos;
-using StationApi.StoreDatabaseSettings;
-using System.ComponentModel.DataAnnotations;
 namespace StationApi.Repository;
 
 public class StationRepository: IStationRepository
@@ -15,11 +13,11 @@ public class StationRepository: IStationRepository
     public  StationRepository(IMongoDatabase collection,
         StationDbContext sqlContext, IConfiguration config)
     {
-        _collection = collection.GetCollection<BsonDocument>("StationsStatus"); ;
+        _collection = collection.GetCollection<BsonDocument>("StationsStatus");
         _sqlContext=sqlContext;
         _prefix = config["DataSource:StationPrefix"]!;
     }
-    public async Task<IEnumerable<GetFiletrDto>> GetStationAsync(
+    public async Task<IEnumerable<GetFilterDto>> GetStationAsync(
     int? minAvailableBikes, int? isRenting, int? isReturning)
     {
         var filterBuilder = Builders<BsonDocument>.Filter;
@@ -40,7 +38,7 @@ public class StationRepository: IStationRepository
 
         if (!mongoDocs.Any())
         {
-            return Enumerable.Empty<GetFiletrDto>();
+            return Enumerable.Empty<GetFilterDto>();
         }
 
         // שלב 2: חילוץ מזהי התחנות שנמצאו
@@ -51,13 +49,12 @@ public class StationRepository: IStationRepository
             .ToList();
 
         // שליפה יעילה מ-MySQL במכה אחת (WHERE IN)
-        var sqlStations = await _sqlContext.stationInformation
+        var sqlStations = await _sqlContext.StationInformation
             .AsNoTracking()
-            .Where(s => stationIds.Contains(s.Station_id))
-            .ToDictionaryAsync(s => s.Station_id);
+            .Where(s => stationIds.Contains(s.StationId))
+            .ToDictionaryAsync(s => s.StationId);
 
-        // שלב 3: מיזוג הנתונים ל-AllDataDto
-        var result = new List<GetFiletrDto>();
+        var result = new List<GetFilterDto>();
 
         foreach (var doc in mongoDocs)
         {
@@ -65,20 +62,18 @@ public class StationRepository: IStationRepository
 
             sqlStations.TryGetValue(id, out var sqlInfo);
 
-            result.Add(new GetFiletrDto
+            result.Add(new GetFilterDto
             {
-                Station_id = id,
+                StationId = id,
                 Name = sqlInfo?.Name ?? string.Empty,
                 Lat = sqlInfo?.Lat ?? 0,
                 Lon = sqlInfo?.Lon ?? 0,
                 Capacity = sqlInfo?.Capacity ?? 0,
 
-                Num_bikes_available = Number(doc, "Num_bikes_available", "num_bikes_available"),
-                //Nun_vehicles_available = Number(doc, "Nun_vehicles_available", "num_vehicles_available"),
-                Num_docs_available = Number(doc, "Num_docs_available", "num_docks_available"),
-                Is_renting = Number(doc, "Is_renting", "is_renting"),
-                Is_returning = Number(doc, "Is_returning", "is_returning"),
-                //Last_reported = doc.GetValue("Last_reported", doc.GetValue("last_reported", 0L)).ToInt64()
+                NumBikesAvailable = Number(doc, "Num_bikes_available", "num_bikes_available"),
+                NumDocksAvailable = Number(doc, "Num_docs_available", "num_docks_available"),
+                IsRenting = Number(doc, "Is_renting", "is_renting"),
+                IsReturning = Number(doc, "Is_returning", "is_returning"),
             });
         }
 
@@ -88,9 +83,9 @@ public class StationRepository: IStationRepository
     {
         if (!id.StartsWith(_prefix, StringComparison.Ordinal)) return null;
         var sqlResult = await _sqlContext
-            .stationInformation
+            .StationInformation
             .AsNoTracking()
-            .FirstOrDefaultAsync(x=>x.Station_id==id);
+            .FirstOrDefaultAsync(x=>x.StationId==id);
 
         var filter = Builders<BsonDocument>.Filter.Eq("Station_id", id);
         var mongoDoc = await _collection.Find(filter).FirstOrDefaultAsync();
@@ -100,19 +95,19 @@ public class StationRepository: IStationRepository
         }
         return new AllDataDto
         {
-            Station_id = id,
+            StationId = id,
 
             Name = sqlResult.Name ?? string.Empty,
             Lat = sqlResult.Lat,
             Lon = sqlResult.Lon,
             Capacity = sqlResult.Capacity,
 
-            Num_bikes_available = Number(mongoDoc, "Num_bikes_available", "num_bikes_available"),
-            Nun_vehicles_available = Number(mongoDoc, "Nun_vehicles_available", "num_vehicles_available"),
-            Num_docs_available = Number(mongoDoc, "Num_docs_available", "num_docks_available"),
-            Is_renting = Number(mongoDoc, "Is_renting", "is_renting"),
-            Is_returning = Number(mongoDoc, "Is_returning", "is_returning"),
-            Last_reported = Timestamp(mongoDoc)
+            NumBikesAvailable = Number(mongoDoc, "Num_bikes_available", "num_bikes_available"),
+            NumVehiclesAvailable = Number(mongoDoc, "Nun_vehicles_available", "num_vehicles_available"),
+            NumDocksAvailable = Number(mongoDoc, "Num_docs_available", "num_docks_available"),
+            IsRenting = Number(mongoDoc, "Is_renting", "is_renting"),
+            IsReturning = Number(mongoDoc, "Is_returning", "is_returning"),
+            LastReported = Timestamp(mongoDoc)
         };
     }
     private static int? Number(BsonDocument doc, string key, string fallback)

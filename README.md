@@ -4,7 +4,7 @@
 
 ## פתיחה והפעלה
 
-פתחו את `BikeFleet.code-workspace` ב־VS Code, או את `BikeFleet.sln` התואם ל־.NET 8. שירות הקליטה נמצא בתיקיית `Bike_fleet_operation_platform`.
+פתחו את `BikeFleet.code-workspace` ב־VS Code, או את `BikeFleet.sln` התואם ל־.NET 8. שירות הקליטה נמצא בתיקיית `BikeFleetOperationPlatform`.
 
 ```powershell
 # רק אם אין קובץ .env: יוצר סיסמאות אקראיות מקומיות

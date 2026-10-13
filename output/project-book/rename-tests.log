@@ -1,0 +1,169 @@
+PASS: Outflow is six bikes per hour
+PASS: Shortage prediction is forty minutes
+PASS: Very low utilization is critical
+PASS: Overcrowding predicted in thirty minutes
+PASS: Stable balanced station is healthy
+PASS: Stable station does not invent predictions
+PASS: Stale data suppresses trend and predictions
+PASS: Missing data is not labelled healthy
+PASS: No history produces no prediction
+PASS: Duplicate timestamps do not divide by zero
+PASS: Unpublished capacity keeps real availability but disables utilization and full forecasts
+PASS: Unpublished capacity cannot generate transfers
+PASS: Invalid counts are flagged
+PASS: Rebalancing finds excess station
+PASS: Move is bounded by maximum quantity
+PASS: Move respects source inventory
+PASS: Move respects destination capacity
+PASS: Reserved station is not allocated twice
+PASS: Stale source is not used
+PASS: No self moves
+PASS: Closed station cannot supply bikes
+PASS: Unavailable docks prohibit a move
+PASS: Donor with imminent shortage is excluded
+PASS: One active move per station
+PASS: Invalid thresholds rejected
+PASS: Empty station predicts immediate shortage
+PASS: Full station predicts immediate overflow
+PASS: Missing count is not an empty station
+PASS: Missing receiver never generates a move
+PASS: Missing return capacity prevents recommendations
+PASS: Unknown rental state prevents recommendations
+PASS: New receipt does not make an old empty reading current
+PASS: Future source clock is invalid
+PASS: Fresh zero remains a real empty station
+PASS: Excessive return capacity is invalid
+PASS: Ingestion preserves absent fields as null
+PASS: Explicit null source timestamp remains missing
+PASS: Ingestion preserves explicit zero
+PASS: Kafka JSON round trip retains missing count and receipt time
+PASS: GBFS boolean flags convert to existing Kafka integers
+PASS: Empty-time metric excludes gaps and nonzero samples
+PASS: Empty-time metric deduplicates source timestamps
+PASS: No readings do not invent empty time
+PASS: Duration 0 => 0 minutes
+PASS: Duration 1 => 1 minute
+PASS: Duration 45 => 45 minutes
+PASS: Duration 60 => 1 hour
+PASS: Duration 61 => 1 hour 1 minute
+PASS: Duration 120 => 2 hours
+PASS: Duration 306 => 5 hours 6 minutes
+PASS: Duration 0.1 => 1 minute
+PASS: Duration 60.1 => 1 hour 1 minute
+PASS: Invalid duration is not displayed as a time
+PASS: Invalid duration is not displayed as a time
+PASS: Invalid duration is not displayed as a time
+PASS: Invalid duration is not displayed as a time
+PASS: Single issue resolved restores healthy operation
+PASS: Another open report keeps maintenance state
+PASS: Another open alert keeps station attention
+PASS: Resolution never overrides live critical availability
+PASS: Stale telemetry cannot become active after resolution
+PASS: Passwords are hashed and a valid password verifies
+PASS: Incorrect password fails validation
+PASS: Registration validates name email and password on the server
+PASS: Valid registration passes server validation
+PASS: Station name fallback is never blank
+66 business checks passed.
+PASS: Dashboard reuses Redis data with a 60-second TTL
+PASS: Cached reports are rechecked for staleness
+PASS: Cache key separates providers
+PASS: Corrupt cache falls back to database loader
+PASS: Mutation invalidates previous list cache generation
+PASS: Incoming telemetry invalidates query cache
+PASS: Redis outage falls back and does not fail the dashboard
+PASS: Single station has its own 60-second cache
+PASS: One mutation invalidates both single station and list caches
+PASS: Transient HTTP failure retries; valid empty feed remains empty
+PASS: Provider failure does not fabricate a successful response
+PASS: Source fetch respects cancellation
+PASS: Anonymous access blocked: /api/users
+PASS: Anonymous access blocked: /api/stations
+PASS: Anonymous access blocked: /api/alerts
+PASS: Anonymous access blocked: /api/recommendations
+PASS: Anonymous access blocked: /api/dashboard
+PASS: Anonymous access blocked: /api/Station
+PASS: Rider blocked from operational API: /api/users
+PASS: Rider blocked from operational API: /api/stations
+PASS: Rider blocked from operational API: /api/dashboard
+PASS: Rider blocked from operational API: /api/Station
+PASS: Rider blocked from operational API: /api/recommendations
+PASS: Rider blocked from operational API: /api/alerts
+PASS: Rider blocked from operational API: /api/metrics
+PASS: Rider blocked from operational API: /api/rider-issues
+PASS: Operator blocked from user administration by backend
+PASS: Razor View renders: /Workspace/Login (200)
+PASS: No JavaScript in /Workspace/Login
+PASS: CSRF token included: /Workspace/Login
+PASS: Razor View renders: / (200)
+PASS: No JavaScript in /
+PASS: CSRF token included: /
+PASS: Razor View renders: /Workspace/Stations (200)
+PASS: No JavaScript in /Workspace/Stations
+PASS: CSRF token included: /Workspace/Stations
+PASS: Razor View renders: /Workspace/Station?id=S01 (200)
+PASS: No JavaScript in /Workspace/Station?id=S01
+PASS: CSRF token included: /Workspace/Station?id=S01
+PASS: Razor View renders: /Workspace/Alerts (200)
+PASS: No JavaScript in /Workspace/Alerts
+PASS: CSRF token included: /Workspace/Alerts
+PASS: Razor View renders: /Workspace/Recommendations (200)
+PASS: No JavaScript in /Workspace/Recommendations
+PASS: CSRF token included: /Workspace/Recommendations
+PASS: Razor View renders: /Workspace/Users (200)
+PASS: No JavaScript in /Workspace/Users
+PASS: CSRF token included: /Workspace/Users
+PASS: Razor View renders: /Workspace/EditUser (200)
+PASS: No JavaScript in /Workspace/EditUser
+PASS: CSRF token included: /Workspace/EditUser
+PASS: Razor View renders: /Workspace/EditUser?id=1 (200)
+PASS: No JavaScript in /Workspace/EditUser?id=1
+PASS: CSRF token included: /Workspace/EditUser?id=1
+PASS: Razor View renders: /Workspace/Profile (200)
+PASS: No JavaScript in /Workspace/Profile
+PASS: CSRF token included: /Workspace/Profile
+PASS: Razor View renders: /Workspace/Register (200)
+PASS: No JavaScript in /Workspace/Register
+PASS: CSRF token included: /Workspace/Register
+PASS: Razor View renders: /Workspace/Metrics (200)
+PASS: No JavaScript in /Workspace/Metrics
+PASS: CSRF token included: /Workspace/Metrics
+PASS: Razor View renders: /Workspace/Reports (200)
+PASS: No JavaScript in /Workspace/Reports
+PASS: CSRF token included: /Workspace/Reports
+PASS: Razor View renders: /Rider/Index (200)
+PASS: No JavaScript in /Rider/Index
+PASS: CSRF token included: /Rider/Index
+PASS: Razor View renders: /Rider/Report?id=S01 (200)
+PASS: No JavaScript in /Rider/Report?id=S01
+PASS: CSRF token included: /Rider/Report?id=S01
+PASS: Razor View renders: /Workspace/Confirm?kind=recommendation&id=1&status=COMPLETED (200)
+PASS: No JavaScript in /Workspace/Confirm?kind=recommendation&id=1&status=COMPLETED
+PASS: CSRF token included: /Workspace/Confirm?kind=recommendation&id=1&status=COMPLETED
+PASS: Razor distinguishes missing, outdated and empty stations
+PASS: Razor shows unknown availability and separate timestamps
+PASS: Missing station detail does not show zero or a forecast
+PASS: Read-only station view refreshes automatically without JavaScript
+PASS: Automatic refresh can be paused while searching
+PASS: Registration input is not interrupted by automatic refresh
+PASS: Dashboard keeps availability labels without technical paragraphs
+PASS: Successful resolution redirects to freshly loaded station details
+PASS: Simulated persistence failure is shown without a success redirect
+PASS: Task update returns to its new status filter: IN_PROGRESS
+PASS: Updated task is visible with saved status: IN_PROGRESS
+PASS: Task update returns to its new status filter: COMPLETED
+PASS: Updated task is visible with saved status: COMPLETED
+PASS: Completed task no longer offers completion
+PASS: Sign out is available above page content
+PASS: Registration link is inside the sign-in panel
+PASS: Password input is masked
+PASS: Form writes without CSRF token rejected
+PASS: Kafka batch waits for every delivery before flushing
+PASS: Kafka batch preserves topic, keys and cancellation token
+PASS: Kafka batch preserves existing JSON including missing and zero counts
+delivered station citibike:2 to partition 0 at offset 0
+delivered station citibike:1 to partition 0 at offset 0
+PASS: Kafka batch flushes after successful delivery
+PASS: Kafka delivery failure propagates without a success flush
+PASS: Kafka cancellation propagates
+PASS: Empty Kafka batch publishes no fabricated records

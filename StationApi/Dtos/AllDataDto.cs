@@ -1,4 +1,3 @@
-using MongoDB.Bson.Serialization.Attributes;
 using System.ComponentModel.DataAnnotations;
 
 namespace StationApi.Dtos;
@@ -6,16 +5,23 @@ namespace StationApi.Dtos;
 public class AllDataDto
 {
     [Required]
-    public string Station_id { get; set; } = string.Empty;
+    [System.Text.Json.Serialization.JsonPropertyName("station_id")]
+    public string StationId { get; set; } = string.Empty;
     [Range(0, int.MaxValue)]
-    public int? Num_bikes_available { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("num_bikes_available")]
+    public int? NumBikesAvailable { get; set; }
     [Range(0, int.MaxValue)]
-    public int? Nun_vehicles_available { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("nun_vehicles_available")]
+    public int? NumVehiclesAvailable { get; set; }
     [Range(0, int.MaxValue)]
-    public int? Num_docs_available { get; set; }
-    public int? Is_renting { get; set; }
-    public int? Is_returning { get; set; }
-    public long? Last_reported { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("num_docs_available")]
+    public int? NumDocksAvailable { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("is_renting")]
+    public int? IsRenting { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("is_returning")]
+    public int? IsReturning { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("last_reported")]
+    public long? LastReported { get; set; }
     public string Name { get; set; } = string.Empty;
     [Range(-90, 90)]
     public double Lat { get; set; }

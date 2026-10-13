@@ -70,11 +70,11 @@ public class FleetDataService(StationDbContext sql, IMongoDatabase mongo, SmartF
     {
         var now = DateTime.UtcNow;
         var prefix = config["DataSource:StationPrefix"]!;
-        var query = sql.stationInformation.AsNoTracking().Where(x => x.Station_id.StartsWith(prefix));
-        if (stationId is not null) query = query.Where(x => x.Station_id == stationId);
+        var query = sql.StationInformation.AsNoTracking().Where(x => x.StationId.StartsWith(prefix));
+        if (stationId is not null) query = query.Where(x => x.StationId == stationId);
         var stations = await query.ToListAsync(cancellationToken);
         if (stations.Count == 0) return [];
-        var ids = stations.Select(x => x.Station_id).ToList();
+        var ids = stations.Select(x => x.StationId).ToList();
         var latest = await mongo.GetCollection<BsonDocument>("StationsStatus")
             .Find(Builders<BsonDocument>.Filter.In("Station_id", ids) | Builders<BsonDocument>.Filter.In("station_id", ids))
             .ToListAsync(cancellationToken);
@@ -88,16 +88,16 @@ public class FleetDataService(StationDbContext sql, IMongoDatabase mongo, SmartF
                 .Select(d => new Reading(d["RecordedAt"].ToUniversalTime(), Number(d, "Count")!.Value)).ToList());
         return stations.Select(s =>
         {
-            currentById.TryGetValue(s.Station_id, out var doc);
+            currentById.TryGetValue(s.StationId, out var doc);
             DateTime? reported = null;
             var timestampValue = Value(doc, "Last_reported", "last_reported");
             long timestamp = timestampValue.IsInt64 || timestampValue.IsInt32 ? timestampValue.ToInt64() : 0;
             if (timestamp > 0 && timestamp < 253402300800) reported = DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime;
-            return engine.Analyze(new(s.Station_id, string.IsNullOrWhiteSpace(s.Name) ? $"Station #{s.Station_id}" : s.Name, s.Capacity,
+            return engine.Analyze(new(s.StationId, string.IsNullOrWhiteSpace(s.Name) ? $"Station #{s.StationId}" : s.Name, s.Capacity,
                 Number(doc, "Num_bikes_available", "num_bikes_available"),
                 Number(doc, "Num_docs_available", "num_docks_available"), reported,
                 Flag(doc, "Is_renting", "is_renting"), Flag(doc, "Is_returning", "is_returning"),
-                s.Lat, s.Lon, historyById.GetValueOrDefault(s.Station_id) ?? [],
+                s.Lat, s.Lon, historyById.GetValueOrDefault(s.StationId) ?? [],
                 Value(doc, "ReceivedAt").IsBsonDateTime ? Value(doc, "ReceivedAt").ToUniversalTime() : null), now);
         }).OrderByDescending(x => x.RiskScore).ThenBy(x => x.Station.Name).ToList();
     }
@@ -105,8 +105,8 @@ public class FleetDataService(StationDbContext sql, IMongoDatabase mongo, SmartF
     private async Task<Dictionary<string, string>> Names(IEnumerable<string> stationIds, CancellationToken token)
     {
         var ids = stationIds.Distinct().ToList();
-        return await sql.stationInformation.AsNoTracking().Where(x => ids.Contains(x.Station_id))
-            .ToDictionaryAsync(x => x.Station_id, x => string.IsNullOrWhiteSpace(x.Name) ? "Station #" + x.Station_id : x.Name, token);
+        return await sql.StationInformation.AsNoTracking().Where(x => ids.Contains(x.StationId))
+            .ToDictionaryAsync(x => x.StationId, x => string.IsNullOrWhiteSpace(x.Name) ? "Station #" + x.StationId : x.Name, token);
     }
     public async Task<List<FleetAlert>> WithNames(List<FleetAlert> rows, CancellationToken token)
     {

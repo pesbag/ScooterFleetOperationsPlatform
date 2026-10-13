@@ -1,11 +1,6 @@
 using ProcessingService.DataDbContext;
 using ProcessingService.Dtos;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace ProcessingService.Handler;
 
@@ -23,9 +18,9 @@ public class VehicleTypesHandler:IKafkaMessageHandler
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var dto = JsonSerializer.Deserialize<VehicleTypesDto>(jsonMessage,options);
         if (dto is null) { return false; }
-        var existing = await _context.vehicleTypes.FindAsync(dto.Vehicle_type_id);
+        var existing = await _context.VehicleTypes.FindAsync(dto.VehicleTypeId);
         if (existing is null)
-            await _context.vehicleTypes.AddAsync(dto);
+            await _context.VehicleTypes.AddAsync(dto);
         else
             _context.Entry(existing).CurrentValues.SetValues(dto);
         await _context.SaveChangesAsync();

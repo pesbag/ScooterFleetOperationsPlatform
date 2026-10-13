@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-12T12:27:59.463Z",
+  "stations": 1215,
+  "current": 1183,
+  "selectedStation": "citibike:0e5be726-2452-42a0-9be8-ea85c8408e4c",
+  "healthy": 622,
+  "createdTestUsers": [
+    2,
+    3
+  ]
+}
